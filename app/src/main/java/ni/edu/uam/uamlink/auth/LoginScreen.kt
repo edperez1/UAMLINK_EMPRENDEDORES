@@ -26,73 +26,43 @@ fun LoginScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(UAMBackground)
-            .padding(24.dp)
-    ) {
-        IconButton(onClick = onBackClick, modifier = Modifier.offset(x = (-12).dp)) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = UAMTextPrimary)
-        }
-
+    Column(modifier = Modifier.fillMaxSize().background(UAMBackground).padding(24.dp)) {
+        IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = UAMTextPrimary) }
         Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            text = "Inicia Sesión",
-            color = UAMGreen,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
+        Text("Inicia Sesión", color = UAMGreen, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(40.dp))
 
         UAMTextField(label = "Correo Institucional", value = email, onValueChange = { email = it })
         UAMTextField(label = "Contraseña", value = password, onValueChange = { password = it }, isPassword = true)
 
-        if (errorMessage != null) {
-            Text(text = errorMessage!!, color = UAMError, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+        if (errorMessage != null) { Text(text = errorMessage!!, color = UAMError, fontSize = 14.sp) }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                if (email.isNotBlank() && password.isNotBlank()) {
-                    scope.launch {
-                        isLoading = true
-                        errorMessage = null
-                        try {
-                            SupabaseNetwork.client.auth.signInWith(Email) {
-                                this.email = email
-                                this.password = password
-                            }
-                            onSuccess()
-                        } catch (e: Exception) {
-                            errorMessage = "Error: Verifica tus credenciales."
-                        } finally {
-                            isLoading = false
+                scope.launch {
+                    isLoading = true
+                    try {
+                        SupabaseNetwork.client.auth.signInWith(Email) {
+                            this.email = email
+                            this.password = password
                         }
+                        onSuccess()
+                    } catch (e: Exception) {
+                        errorMessage = "Error: ${e.message}"
+                    } finally {
+                        isLoading = false
                     }
-                } else {
-                    errorMessage = "Llena todos los campos."
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
             modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(12.dp),
-            enabled = !isLoading
+            colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-            } else {
-                Text("Iniciar Sesión", color = Color.White, fontWeight = FontWeight.Bold)
-            }
+            if (isLoading) CircularProgressIndicator(color = Color.White)
+            else Text("Iniciar Sesión", color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }

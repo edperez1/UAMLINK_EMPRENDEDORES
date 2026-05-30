@@ -14,7 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import ni.edu.uam.uamlink.auth.LoginScreen
 import ni.edu.uam.uamlink.auth.RegisterScreen
 import ni.edu.uam.uamlink.auth.WelcomeScreen
-import ni.edu.uam.uamlink.auth.RoleSelectionScreen // Importamos la nueva pantalla
+import ni.edu.uam.uamlink.auth.RoleSelectionScreen
 import ni.edu.uam.uamlink.ui.theme.UAMlinkTheme
 import ni.edu.uam.uamlink.ui.theme.UAMBackground
 
@@ -52,7 +52,12 @@ fun AppNavigation() {
         composable("login") {
             LoginScreen(
                 onBackClick = { navController.popBackStack() },
-                onSuccess = { /* TODO: Navegar al Market */ }
+                onSuccess = {
+                    // SOLUCIONADO: Ahora el login navega correctamente
+                    navController.navigate("role_selection") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
             )
         }
 
@@ -60,7 +65,6 @@ fun AppNavigation() {
             RegisterScreen(
                 onBackClick = { navController.popBackStack() },
                 onSuccess = {
-                    // Al registrarse, enviamos al usuario a elegir su rol
                     navController.navigate("role_selection") {
                         popUpTo("register") { inclusive = true }
                     }
@@ -70,9 +74,9 @@ fun AppNavigation() {
 
         composable("role_selection") {
             RoleSelectionScreen(onComplete = { role ->
-                // Aquí el usuario ya eligió si es comprador o vendedor
                 println("Usuario configurado como: $role")
-                // TODO: Navegar a la pantalla principal (Home)
+                // Aquí deberías navegar al Market o Home
+                // navController.navigate("home") { popUpTo(0) }
             })
         }
     }
