@@ -80,7 +80,15 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
 
         Button(
             onClick = {
-                if (email.isNotBlank() && password.length >= 6) {
+                // Validación estricta
+                val esCorreoValido = email.endsWith("@uamv.edu.ni")
+                val esPassValida = password.length > 5
+
+                if (!esCorreoValido) {
+                    errorMessage = "Debes usar tu correo institucional (@uamv.edu.ni)"
+                } else if (!esPassValida) {
+                    errorMessage = "La contraseña debe tener más de 5 caracteres"
+                } else {
                     scope.launch {
                         isLoading = true
                         errorMessage = null
@@ -96,8 +104,6 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
                             isLoading = false
                         }
                     }
-                } else {
-                    errorMessage = "Llena los campos (Contraseña min. 6 caracteres)."
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
