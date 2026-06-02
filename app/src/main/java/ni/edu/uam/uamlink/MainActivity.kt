@@ -72,7 +72,6 @@ fun AppNavigation() {
         composable("role_selection") {
             RoleSelectionScreen(
                 onNavigateHome = { isSeller ->
-                    // Navegamos al home enviando la decisión
                     navController.navigate("home/$isSeller") {
                         popUpTo("role_selection") { inclusive = true }
                     }
@@ -80,13 +79,23 @@ fun AppNavigation() {
             )
         }
 
-        // Ruta actualizada para recibir el argumento isSeller
+        // AQUÍ ESTÁ EL CAMBIO CRUCIAL:
+        // Ahora pasamos la función onLogout para cerrar sesión correctamente
         composable(
             route = "home/{isSeller}",
             arguments = listOf(navArgument("isSeller") { type = NavType.BoolType })
         ) { backStackEntry ->
             val isSeller = backStackEntry.arguments?.getBoolean("isSeller") ?: false
-            HomeScreen(isSeller = isSeller)
+
+            HomeScreen(
+                isSeller = isSeller,
+                onLogout = {
+                    // Al cerrar sesión, limpiamos todo el historial y volvemos al inicio
+                    navController.navigate("welcome") {
+                        popUpTo(0) { inclusive = true } // Vacía toda la pila de navegación
+                    }
+                }
+            )
         }
     }
 }
