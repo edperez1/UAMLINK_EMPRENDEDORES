@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.auth.auth
 import ni.edu.uam.uamlink.core.data.SupabaseNetwork
 import ni.edu.uam.uamlink.domain.ChatRoom
 import ni.edu.uam.uamlink.domain.Mensaje
@@ -32,17 +31,17 @@ import ni.edu.uam.uamlink.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatDetailScreen(chatRoom: ChatRoom, onBackClick: () -> Unit) {
+// ACTUALIZACIÓN: Se agregó miUsuarioId a la firma de la función
+fun ChatDetailScreen(
+    chatRoom: ChatRoom,
+    miUsuarioId: String,
+    onBackClick: () -> Unit
+) {
     val mensajes = remember { mutableStateListOf<Mensaje>() }
     var nuevoMensajeTexto by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
-
-    val miUsuarioId = remember {
-        SupabaseNetwork.client.auth.currentUserOrNull()?.id
-            ?: "00000000-0000-0000-0000-000000000000"
-    }
 
     // Cargar el historial de mensajes de esta sala desde Supabase
     LaunchedEffect(chatRoom.id) {
@@ -65,11 +64,11 @@ fun ChatDetailScreen(chatRoom: ChatRoom, onBackClick: () -> Unit) {
         }
     }
 
-    // LÓGICA DE ENVÍO CENTRALIZADA (Para botón y teclado)
+    // LÓGICA DE ENVÍO CENTRALIZADA
     val enviarMensajeAccion = {
         if (nuevoMensajeTexto.isNotBlank()) {
             val textoAEnviar = nuevoMensajeTexto
-            nuevoMensajeTexto = "" // Limpia el input de inmediato para mejor UX
+            nuevoMensajeTexto = ""
 
             coroutineScope.launch {
                 try {
@@ -79,10 +78,8 @@ fun ChatDetailScreen(chatRoom: ChatRoom, onBackClick: () -> Unit) {
                         contenido = textoAEnviar
                     )
 
-                    // Inserta en Supabase
                     SupabaseNetwork.client.postgrest["mensajes"].insert(mensajeObj)
 
-                    // Añade a la lista localmente para actualización instantánea
                     mensajes.add(mensajeObj)
                     listState.animateScrollToItem(mensajes.size - 1)
                 } catch (e: Exception) {
@@ -127,10 +124,9 @@ fun ChatDetailScreen(chatRoom: ChatRoom, onBackClick: () -> Unit) {
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        // CORREGIDO: Eliminamos el parámetro inválido 'focusManager ->'
                         keyboardActions = KeyboardActions(onSend = {
                             enviarMensajeAccion()
-                            focusManager.clearFocus() // Oculta el teclado tras enviar si se desea
+                            focusManager.clearFocus()
                         }),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = UAMGreen,

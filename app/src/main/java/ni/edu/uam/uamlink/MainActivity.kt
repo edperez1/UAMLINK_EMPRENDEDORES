@@ -79,8 +79,6 @@ fun AppNavigation() {
             )
         }
 
-        // AQUÍ ESTÁ EL CAMBIO CRUCIAL:
-        // Ahora pasamos la función onLogout para cerrar sesión correctamente
         composable(
             route = "home/{isSeller}",
             arguments = listOf(navArgument("isSeller") { type = NavType.BoolType })
@@ -90,9 +88,8 @@ fun AppNavigation() {
             HomeScreen(
                 isSeller = isSeller,
                 onLogout = {
-                    // Al cerrar sesión, limpiamos todo el historial y volvemos al inicio
                     navController.navigate("welcome") {
-                        popUpTo(0) { inclusive = true } // Vacía toda la pila de navegación
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

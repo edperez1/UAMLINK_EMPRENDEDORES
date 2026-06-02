@@ -48,16 +48,20 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPublishSheet by remember { mutableStateOf(false) }
     var selectedProductToShow by remember { mutableStateOf<Producto?>(null) }
-    var activeChatRoom by remember { mutableStateOf<ChatRoom?>(null) }
 
+    var activeChatRoom by remember { mutableStateOf<ChatRoom?>(null) }
+    var showUAMBot by remember { mutableStateOf(false) }
     var showOrderSuccessDialog by remember { mutableStateOf<Producto?>(null) }
 
     val productosPublicados = remember { mutableStateListOf<Producto>() }
     val comprasRealizadas = remember { mutableStateListOf<Producto>() }
+    val historialChats = remember { mutableStateListOf<ChatRoom>() }
 
     val coroutineScope = rememberCoroutineScope()
 
-    // CORRECCIÓN: Se especifica explícitamente que la función no retorna nada (Unit)
+    val miUsuarioId = SupabaseNetwork.client.auth.currentUserOrNull()?.id
+        ?: "00000000-0000-0000-0000-000000000000"
+
     val handleLogout: () -> Unit = {
         coroutineScope.launch {
             try {
@@ -70,18 +74,14 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
         }
     }
 
-    // CORRECCIÓN: Se especifica explícitamente (Producto) -> Unit
     val iniciarChat: (Producto) -> Unit = { producto ->
-        val miUsuarioId = SupabaseNetwork.client.auth.currentUserOrNull()?.id
-            ?: "00000000-0000-0000-0000-000000000000"
-
         val nuevaSalaChat = ChatRoom(
             id = java.util.UUID.randomUUID().toString(),
             producto_id = producto.id ?: 0L,
             comprador_id = miUsuarioId,
             vendedor_id = producto.vendedor_id,
             nombre_producto = producto.nombre,
-            nombre_interlocutor = "Vendedor UAM"
+            nombre_interlocutor = if (producto.vendedor_id == miUsuarioId) "Comprador" else "Vendedor UAM"
         )
 
         activeChatRoom = nuevaSalaChat
@@ -91,6 +91,9 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
         coroutineScope.launch {
             try {
                 SupabaseNetwork.client.postgrest["chat_rooms"].insert(nuevaSalaChat)
+                if (!historialChats.any { it.id == nuevaSalaChat.id }) {
+                    historialChats.add(0, nuevaSalaChat)
+                }
             } catch (e: Exception) {
                 println("Error al crear la sala de chat en BD: ${e.message}")
             }
@@ -105,170 +108,435 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
 
             productosPublicados.clear()
             productosPublicados.addAll(productosDesdeBD)
+
+            val chatsDesdeBD = SupabaseNetwork.client.postgrest["chat_rooms"]
+                .select {
+                    filter {
+                        or {
+                            eq("comprador_id", miUsuarioId)
+                            eq("vendedor_id", miUsuarioId)
+                        }
+                    }
+                }.decodeList<ChatRoom>()
+            historialChats.clear()
+            historialChats.addAll(chatsDesdeBD)
+
         } catch (e: Exception) {
-            println("Error al cargar productos del campus: ${e.message}")
+            println("Error al cargar datos del campus: ${e.message}")
         }
     }
 
-    if (activeChatRoom != null) {
-        ChatDetailScreen(
-            chatRoom = activeChatRoom!!,
-            onBackClick = { activeChatRoom = null }
-        )
-    } else {
-        Scaffold(
-            bottomBar = {
-                Surface(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .clip(RoundedCornerShape(32.dp)),
-                    color = Color(0xFF1E1E1E)
-                ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        contentColor = Color.White,
-                        tonalElevation = 0.dp
+    when {
+        activeChatRoom != null -> {
+            ChatDetailScreen(
+                chatRoom = activeChatRoom!!,
+                miUsuarioId = miUsuarioId,
+                onBackClick = { activeChatRoom = null }
+            )
+        }
+        showUAMBot -> {
+            UAMBotScreen(
+                onBackClick = { showUAMBot = false }
+            )
+        }
+        else -> {
+            Scaffold(
+                bottomBar = {
+                    Surface(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .clip(RoundedCornerShape(32.dp)),
+                        color = Color(0xFF1E1E1E)
                     ) {
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.Store, contentDescription = "Mercado") },
-                            selected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = UAMGreen,
-                                unselectedIconColor = Color.Gray,
-                                indicatorColor = Color.Transparent
-                            )
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
-                            selected = selectedTab == 1,
-                            onClick = { selectedTab = 1 },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = UAMGreen,
-                                unselectedIconColor = Color.Gray,
-                                indicatorColor = Color.Transparent
-                            )
-                        )
-                    }
-                }
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(UAMBackground)
-            ) {
-                if (selectedTab == 0) {
-                    if (currentIsSellerMode) {
-                        SellerDashboardContent(
-                            onBackToBuyer = { currentIsSellerMode = false },
-                            onOpenPublish = { showPublishSheet = true },
-                            onLogoutClick = handleLogout
-                        )
-                    } else {
-                        BuyerMarketContent(
-                            productos = productosPublicados,
-                            onToggleMode = { currentIsSellerMode = true },
-                            onProductClick = { producto -> selectedProductToShow = producto },
-                            onLogoutClick = handleLogout
-                        )
-                    }
-                } else {
-                    ProfileContent(
-                        compras = comprasRealizadas,
-                        onProductClick = { producto -> selectedProductToShow = producto },
-                        onLogoutClick = handleLogout
-                    )
-                }
-            }
-
-            if (showOrderSuccessDialog != null) {
-                val prod = showOrderSuccessDialog!!
-                AlertDialog(
-                    onDismissRequest = { showOrderSuccessDialog = null },
-                    containerColor = Color(0xFF1E1E1E),
-                    titleContentColor = UAMGreen,
-                    textContentColor = Color.White,
-                    title = {
-                        Text("¡Pedido Confirmado!", fontWeight = FontWeight.Bold)
-                    },
-                    text = {
-                        Text("Has solicitado exitosamente el artículo: ${prod.nombre}. ¿Deseas acordar la entrega con el vendedor ahora mismo?")
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = { iniciarChat(prod) },
-                            colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)
+                        NavigationBar(
+                            containerColor = Color.Transparent,
+                            contentColor = Color.White,
+                            tonalElevation = 0.dp
                         ) {
-                            Text("Contactar Vendedor", color = Color.Black, fontWeight = FontWeight.Bold)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showOrderSuccessDialog = null }) {
-                            Text("Cerrar", color = Color.Gray)
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Default.Store, contentDescription = "Mercado") },
+                                label = { Text("Campus") },
+                                selected = selectedTab == 0,
+                                onClick = { selectedTab = 0 },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = UAMGreen,
+                                    unselectedIconColor = Color.Gray,
+                                    indicatorColor = Color.Transparent
+                                )
+                            )
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Default.Chat, contentDescription = "Mensajes") },
+                                label = { Text("Mensajes") },
+                                selected = selectedTab == 1,
+                                onClick = { selectedTab = 1 },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = UAMGreen,
+                                    unselectedIconColor = Color.Gray,
+                                    indicatorColor = Color.Transparent
+                                )
+                            )
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
+                                label = { Text("Perfil") },
+                                selected = selectedTab == 2,
+                                onClick = { selectedTab = 2 },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = UAMGreen,
+                                    unselectedIconColor = Color.Gray,
+                                    indicatorColor = Color.Transparent
+                                )
+                            )
                         }
                     }
-                )
-            }
-
-            if (showPublishSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showPublishSheet = false },
-                    sheetState = sheetState,
-                    containerColor = Color(0xFF121212),
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .background(UAMBackground)
                 ) {
-                    PublishProductForm(
-                        onClose = { showPublishSheet = false },
-                        onPublish = { nombre, precio, facultad, estado, entrega ->
-                            coroutineScope.launch {
-                                try {
-                                    val userId = SupabaseNetwork.client.auth.currentUserOrNull()?.id
-                                        ?: "00000000-0000-0000-0000-000000000000"
-
-                                    val nuevoProducto = Producto(
-                                        vendedor_id = userId,
-                                        nombre = nombre,
-                                        precio = precio,
-                                        categoria = facultad,
-                                        estado = estado,
-                                        metodo_entrega = entrega,
-                                        descripcion = "Artículo publicado en campus UAM."
-                                    )
-
-                                    SupabaseNetwork.client.postgrest["productos"].insert(nuevoProducto)
-                                    productosPublicados.add(nuevoProducto)
-                                    showPublishSheet = false
-                                } catch (e: Exception) {
-                                    println("Error al insertar producto: ${e.message}")
-                                }
+                    when (selectedTab) {
+                        0 -> {
+                            if (currentIsSellerMode) {
+                                SellerDashboardContent(
+                                    onBackToBuyer = { currentIsSellerMode = false },
+                                    onOpenPublish = { showPublishSheet = true },
+                                    onLogoutClick = handleLogout
+                                )
+                            } else {
+                                BuyerMarketContent(
+                                    productos = productosPublicados,
+                                    onToggleMode = { currentIsSellerMode = true },
+                                    onProductClick = { producto -> selectedProductToShow = producto },
+                                    onLogoutClick = handleLogout
+                                )
                             }
-                            Unit // Fuerza el retorno a Unit por seguridad en el callback
+                        }
+                        1 -> {
+                            MessagesHistoryContent(
+                                chats = historialChats,
+                                onChatClick = { chatRoom -> activeChatRoom = chatRoom },
+                                onBotClick = { showUAMBot = true }
+                            )
+                        }
+                        2 -> {
+                            ProfileContent(
+                                compras = comprasRealizadas,
+                                onProductClick = { producto -> selectedProductToShow = producto },
+                                onLogoutClick = handleLogout
+                            )
+                        }
+                    }
+                }
+
+                if (showOrderSuccessDialog != null) {
+                    val prod = showOrderSuccessDialog!!
+                    AlertDialog(
+                        onDismissRequest = { showOrderSuccessDialog = null },
+                        containerColor = Color(0xFF1E1E1E),
+                        titleContentColor = UAMGreen,
+                        textContentColor = Color.White,
+                        title = {
+                            Text("¡Pedido Confirmado!", fontWeight = FontWeight.Bold)
+                        },
+                        text = {
+                            Text("Has solicitado exitosamente el artículo: ${prod.nombre}. ¿Deseas acordar la entrega con el vendedor ahora mismo?")
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = { iniciarChat(prod) },
+                                colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)
+                            ) {
+                                Text("Contactar Vendedor", color = Color.Black, fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showOrderSuccessDialog = null }) {
+                                Text("Cerrar", color = Color.Gray)
+                            }
                         }
                     )
                 }
+
+                if (showPublishSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showPublishSheet = false },
+                        sheetState = sheetState,
+                        containerColor = Color(0xFF121212),
+                        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+                    ) {
+                        PublishProductForm(
+                            onClose = { showPublishSheet = false },
+                            onPublish = { nombre, precio, facultad, estado, entrega ->
+                                coroutineScope.launch {
+                                    try {
+                                        val userId = SupabaseNetwork.client.auth.currentUserOrNull()?.id
+                                            ?: "00000000-0000-0000-0000-000000000000"
+
+                                        val nuevoProducto = Producto(
+                                            vendedor_id = userId,
+                                            nombre = nombre,
+                                            precio = precio,
+                                            categoria = facultad,
+                                            estado = estado,
+                                            metodo_entrega = entrega,
+                                            descripcion = "Artículo publicado en campus UAM."
+                                        )
+
+                                        SupabaseNetwork.client.postgrest["productos"].insert(nuevoProducto)
+                                        productosPublicados.add(nuevoProducto)
+                                        showPublishSheet = false
+                                    } catch (e: Exception) {
+                                        println("Error al insertar producto: ${e.message}")
+                                    }
+                                }
+                                Unit
+                            }
+                        )
+                    }
+                }
+
+                if (selectedProductToShow != null) {
+                    ModalBottomSheet(
+                        onDismissRequest = { selectedProductToShow = null },
+                        sheetState = sheetState,
+                        containerColor = Color(0xFF1E1E1E),
+                        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+                    ) {
+                        ProductDetailsSheet(
+                            producto = selectedProductToShow!!,
+                            onClose = { selectedProductToShow = null },
+                            onBuyProduct = {
+                                val productoComprado = selectedProductToShow!!
+                                comprasRealizadas.add(productoComprado)
+                                selectedProductToShow = null
+                                showOrderSuccessDialog = productoComprado
+                            },
+                            onContactSeller = {
+                                iniciarChat(selectedProductToShow!!)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MessagesHistoryContent(
+    chats: List<ChatRoom>,
+    onChatClick: (ChatRoom) -> Unit,
+    onBotClick: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        item { Spacer(modifier = Modifier.height(20.dp)) }
+        item {
+            Text("Tus Mensajes", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        }
+        item { Spacer(modifier = Modifier.height(24.dp)) }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onBotClick() },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)),
+                border = BorderStroke(1.dp, UAMGreen.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .background(UAMGreen.copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🤖", fontSize = 24.sp)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text("UAMBot", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Asistente de Campus Link", color = UAMGreen, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(24.dp)) }
+        item {
+            Text("Conversaciones Recientes", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+
+        if (chats.isEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.ChatBubbleOutline,
+                        contentDescription = null,
+                        tint = Color.DarkGray,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Aún no tienes mensajes directos", color = Color.Gray, fontSize = 14.sp)
+                }
+            }
+        } else {
+            items(chats) { chat ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                        .clickable { onChatClick(chat) },
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF2C2C2C), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = chat.nombre_interlocutor ?: "Usuario",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                text = "Sobre: ${chat.nombre_producto}",
+                                color = Color.Gray,
+                                fontSize = 12.sp,
+                                maxLines = 1
+                            )
+                        }
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UAMBotScreen(onBackClick: () -> Unit) {
+    data class BotMsg(val text: String, val isUser: Boolean)
+
+    val messages = remember { mutableStateListOf(
+        BotMsg("¡Hola! Soy UAMBot 🤖. ¿En qué te puedo ayudar hoy con Campus Link?", false)
+    )}
+
+    val commonQuestions = listOf(
+        "¿Cómo publico un artículo?",
+        "¿Es seguro comprar aquí?",
+        "¿Dónde se entrega el producto?"
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("UAMBot Asistente", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = UAMGreen)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF121212))
+            )
+        },
+        containerColor = UAMBackground
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                reverseLayout = false
+            ) {
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                items(messages) { msg ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (msg.isUser) UAMGreen else Color(0xFF1E1E1E),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .padding(12.dp)
+                                .widthIn(max = 280.dp)
+                        ) {
+                            Text(
+                                text = msg.text,
+                                color = if (msg.isUser) Color.Black else Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
             }
 
-            if (selectedProductToShow != null) {
-                ModalBottomSheet(
-                    onDismissRequest = { selectedProductToShow = null },
-                    sheetState = sheetState,
-                    containerColor = Color(0xFF1E1E1E),
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
-                ) {
-                    ProductDetailsSheet(
-                        producto = selectedProductToShow!!,
-                        onClose = { selectedProductToShow = null },
-                        onBuyProduct = {
-                            val productoComprado = selectedProductToShow!!
-                            comprasRealizadas.add(productoComprado)
-                            selectedProductToShow = null
-                            showOrderSuccessDialog = productoComprado
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(commonQuestions) { question ->
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            messages.add(BotMsg(question, true))
+                            val respuesta = when(question) {
+                                "¿Cómo publico un artículo?" -> "Para publicar, ve a la pestaña 'Campus', toca el ícono de cambio de modo (las flechas) para entrar en modo vendedor, y luego presiona el botón '+'."
+                                "¿Es seguro comprar aquí?" -> "¡Sí! Campus Link está diseñado para conectar estudiantes de la universidad. Las entregas se hacen dentro de la seguridad del campus."
+                                else -> "Recomendamos acordar las entregas en lugares públicos y concurridos como la cafetería principal o cerca de la biblioteca."
+                            }
+                            messages.add(BotMsg(respuesta, false))
                         },
-                        onContactSeller = {
-                            iniciarChat(selectedProductToShow!!)
-                        }
+                        label = { Text(question, color = Color.White) },
+                        colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E)),
+                        shape = CircleShape
                     )
                 }
             }
