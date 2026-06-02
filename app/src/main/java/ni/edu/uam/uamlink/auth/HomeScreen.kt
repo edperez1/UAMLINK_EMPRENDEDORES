@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,11 +21,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import ni.edu.uam.uamlink.components.UAMTextField
+import ni.edu.uam.uamlink.domain.Producto
+import ni.edu.uam.uamlink.core.data.SupabaseNetwork
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.auth.auth
 import ni.edu.uam.uamlink.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,13 +41,29 @@ fun HomeScreen(isSeller: Boolean) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var currentIsSellerMode by remember { mutableStateOf(isSeller) }
 
-    // Controladores del Bottom Sheet para publicar
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPublishSheet by remember { mutableStateOf(false) }
 
+    // Estado reactivo para la UI
+    val productosPublicados = remember { mutableStateListOf<Producto>() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // LECTURA: Se ejecuta al abrir la pantalla para traer los datos de Supabase
+    LaunchedEffect(Unit) {
+        try {
+            val productosDesdeBD = SupabaseNetwork.client.postgrest["productos"]
+                .select()
+                .decodeList<Producto>()
+
+            productosPublicados.clear()
+            productosPublicados.addAll(productosDesdeBD)
+        } catch (e: Exception) {
+            println("Error al cargar productos del campus: ${e.message}")
+        }
+    }
+
     Scaffold(
         bottomBar = {
-            // Barra de navegación estilo isla
             Surface(
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -89,6 +113,7 @@ fun HomeScreen(isSeller: Boolean) {
                     )
                 } else {
                     BuyerMarketContent(
+                        productos = productosPublicados,
                         onToggleMode = { currentIsSellerMode = true }
                     )
                 }
@@ -97,7 +122,6 @@ fun HomeScreen(isSeller: Boolean) {
             }
         }
 
-        // Ventana emergente (Bottom Sheet) para el formulario completo de venta
         if (showPublishSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showPublishSheet = false },
@@ -105,14 +129,46 @@ fun HomeScreen(isSeller: Boolean) {
                 containerColor = Color(0xFF121212),
                 dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
             ) {
-                PublishProductForm(onClose = { showPublishSheet = false })
+                PublishProductForm(
+                    onClose = { showPublishSheet = false },
+                    onPublish = { nombre, precio, facultad, estado, entrega ->
+                        coroutineScope.launch {
+                            try {
+                                // 1. Extraemos el usuario logueado o usamos uno por defecto de seguridad
+                                val userId = SupabaseNetwork.client.auth.currentUserOrNull()?.id
+                                    ?: "00000000-0000-0000-0000-000000000000"
+
+                                // 2. Creamos el objeto basado en tu clase Producto
+                                val nuevoProducto = Producto(
+                                    vendedor_id = userId,
+                                    nombre = nombre,
+                                    precio = precio,
+                                    categoria = facultad,
+                                    estado = estado,
+                                    metodo_entrega = entrega
+                                )
+
+                                // 3. ESCRITURA: Mandamos el producto a Supabase
+                                SupabaseNetwork.client.postgrest["productos"].insert(nuevoProducto)
+
+                                // 4. Actualizamos la interfaz instantáneamente
+                                productosPublicados.add(nuevoProducto)
+                                showPublishSheet = false
+                                println("Producto insertado con éxito en Supabase")
+
+                            } catch (e: Exception) {
+                                println("Error al insertar producto: ${e.message}")
+                            }
+                        }
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun BuyerMarketContent(onToggleMode: () -> Unit) {
+fun BuyerMarketContent(productos: List<Producto>, onToggleMode: () -> Unit) {
     val scrollState = rememberScrollState()
 
     var searchQuery by remember { mutableStateOf("") }
@@ -127,7 +183,6 @@ fun BuyerMarketContent(onToggleMode: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -145,7 +200,6 @@ fun BuyerMarketContent(onToggleMode: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Buscador
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f)) {
                 UAMTextField(
@@ -158,7 +212,6 @@ fun BuyerMarketContent(onToggleMode: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Filtros de Estado
         Text("Filtrar por:", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -179,7 +232,6 @@ fun BuyerMarketContent(onToggleMode: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Categorías de Facultad
         Text("Categorías de Facultad", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,18 +252,21 @@ fun BuyerMarketContent(onToggleMode: () -> Unit) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Carrusel de Productos Destacados
         Text("Productos Destacados", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(12.dp))
+
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(4) { index ->
-                FeaturedProductCard(index)
+            if (productos.isEmpty()) {
+                items(2) { index -> FeaturedProductPlaceholder(index) }
+            } else {
+                items(productos) { producto ->
+                    FeaturedProductCard(producto)
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Estado Vacío
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -221,7 +276,7 @@ fun BuyerMarketContent(onToggleMode: () -> Unit) {
             Text("Parece que no hay nada más por aquí...", color = Color.Gray)
         }
 
-        Spacer(modifier = Modifier.height(80.dp)) // Espacio extra para que no estorbe la navbar flotante
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
@@ -248,7 +303,6 @@ fun SellerDashboardContent(onBackToBuyer: () -> Unit, onOpenPublish: () -> Unit)
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Header del vendedor
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -291,14 +345,15 @@ fun SellerDashboardContent(onBackToBuyer: () -> Unit, onOpenPublish: () -> Unit)
 }
 
 @Composable
-fun PublishProductForm(onClose: () -> Unit) {
+fun PublishProductForm(onClose: () -> Unit, onPublish: (String, Double, String, String, String) -> Unit) {
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
 
     var productName by remember { mutableStateOf("") }
     var productPrice by remember { mutableStateOf("") }
     var selectedFaculty by remember { mutableStateOf("Ingeniería") }
     var selectedCondition by remember { mutableStateOf("Como nuevo") }
-    var deliveryMethod by remember { mutableStateOf("Campus UAM") }
+    var deliveryMethod by remember { mutableStateOf("Entrega a mano") }
 
     Column(
         modifier = Modifier
@@ -333,6 +388,8 @@ fun PublishProductForm(onClose: () -> Unit) {
             value = productName,
             onValueChange = { productName = it },
             label = { Text("¿Qué vas a vender?", color = Color.Gray) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = UAMGreen,
                 unfocusedBorderColor = Color.DarkGray,
@@ -348,7 +405,14 @@ fun PublishProductForm(onClose: () -> Unit) {
             value = productPrice,
             onValueChange = { productPrice = it },
             label = { Text("Precio (C$)", color = Color.Gray) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { focusManager.clearFocus() }
+            ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = UAMGreen,
                 unfocusedBorderColor = Color.DarkGray,
@@ -360,7 +424,6 @@ fun PublishProductForm(onClose: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // SECCIÓN RESTAURADA: Selección de Facultad
         Text("Categoría / Facultad", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -381,7 +444,6 @@ fun PublishProductForm(onClose: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // SECCIÓN RESTAURADA: Selección de Estado
         Text("Estado del producto", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -402,11 +464,10 @@ fun PublishProductForm(onClose: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // SECCIÓN RESTAURADA: Método de entrega
         Text("Método de entrega preferido", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val methods = listOf("Campus UAM", "Metrocentro", "Galerías", "Envío")
+            val methods = listOf("Entrega a mano", "Punto acordado", "Por envío")
             items(methods) { method ->
                 FilterChip(
                     selected = deliveryMethod == method,
@@ -424,7 +485,12 @@ fun PublishProductForm(onClose: () -> Unit) {
         Spacer(modifier = Modifier.height(40.dp))
 
         Button(
-            onClick = onClose,
+            onClick = {
+                val precioNum = productPrice.toDoubleOrNull() ?: 0.0
+                if (productName.isNotBlank() && productPrice.isNotBlank()) {
+                    onPublish(productName, precioNum, selectedFaculty, selectedCondition, deliveryMethod)
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(55.dp),
             colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
             shape = CircleShape
@@ -432,13 +498,12 @@ fun PublishProductForm(onClose: () -> Unit) {
             Text("Publicar Artículo", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(40.dp)) // Espacio final para que se pueda scrollear hasta abajo
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
-// Tarjeta para los Productos Destacados
 @Composable
-fun FeaturedProductCard(index: Int) {
+fun FeaturedProductCard(producto: Producto) {
     Card(
         modifier = Modifier
             .width(150.dp)
@@ -452,6 +517,28 @@ fun FeaturedProductCard(index: Int) {
                     .fillMaxWidth()
                     .height(100.dp)
                     .background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(32.dp))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(producto.nombre, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("C$ ${producto.precio}", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+fun FeaturedProductPlaceholder(index: Int) {
+    Card(
+        modifier = Modifier.width(150.dp).height(200.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(32.dp))
