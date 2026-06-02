@@ -8,13 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import ni.edu.uam.uamlink.auth.LoginScreen
 import ni.edu.uam.uamlink.auth.RegisterScreen
 import ni.edu.uam.uamlink.auth.WelcomeScreen
 import ni.edu.uam.uamlink.auth.RoleSelectionScreen
+import ni.edu.uam.uamlink.auth.HomeScreen
 import ni.edu.uam.uamlink.ui.theme.UAMlinkTheme
 import ni.edu.uam.uamlink.ui.theme.UAMBackground
 
@@ -24,10 +27,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             UAMlinkTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = UAMBackground
-                ) {
+                Surface(modifier = Modifier.fillMaxSize(), color = UAMBackground) {
                     AppNavigation()
                 }
             }
@@ -45,7 +45,9 @@ fun AppNavigation() {
             WelcomeScreen(
                 onLoginClick = { navController.navigate("login") },
                 onRegisterClick = { navController.navigate("register") },
-                onSkipClick = { /* TODO: Navegar directo al Market */ }
+                onSkipClick = {
+                    navController.navigate("home/false") { popUpTo("welcome") { inclusive = true } }
+                }
             )
         }
 
@@ -53,10 +55,7 @@ fun AppNavigation() {
             LoginScreen(
                 onBackClick = { navController.popBackStack() },
                 onSuccess = {
-                    // SOLUCIONADO: Ahora el login navega correctamente
-                    navController.navigate("role_selection") {
-                        popUpTo("login") { inclusive = true }
-                    }
+                    navController.navigate("role_selection") { popUpTo("login") { inclusive = true } }
                 }
             )
         }
@@ -65,19 +64,29 @@ fun AppNavigation() {
             RegisterScreen(
                 onBackClick = { navController.popBackStack() },
                 onSuccess = {
-                    navController.navigate("role_selection") {
-                        popUpTo("register") { inclusive = true }
-                    }
+                    navController.navigate("role_selection") { popUpTo("register") { inclusive = true } }
                 }
             )
         }
 
         composable("role_selection") {
-            RoleSelectionScreen(onComplete = { role ->
-                println("Usuario configurado como: $role")
-                // Aquí deberías navegar al Market o Home
-                // navController.navigate("home") { popUpTo(0) }
-            })
+            RoleSelectionScreen(
+                onNavigateHome = { isSeller ->
+                    // Navegamos al home enviando la decisión
+                    navController.navigate("home/$isSeller") {
+                        popUpTo("role_selection") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Ruta actualizada para recibir el argumento isSeller
+        composable(
+            route = "home/{isSeller}",
+            arguments = listOf(navArgument("isSeller") { type = NavType.BoolType })
+        ) { backStackEntry ->
+            val isSeller = backStackEntry.arguments?.getBoolean("isSeller") ?: false
+            HomeScreen(isSeller = isSeller)
         }
     }
 }
