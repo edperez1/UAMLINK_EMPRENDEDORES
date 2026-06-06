@@ -54,12 +54,16 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPublishSheet by remember { mutableStateOf(false) }
-    var productToEdit by remember { mutableStateOf<Producto?>(null) }
+    var productToEdit by remember { mutableStateOf<Producto?>(null) } // Estado para Edición
     var selectedProductToShow by remember { mutableStateOf<Producto?>(null) }
 
     var activeChatRoom by remember { mutableStateOf<ChatRoom?>(null) }
     var showUAMBot by remember { mutableStateOf(false) }
     var showOrderSuccessDialog by remember { mutableStateOf<Producto?>(null) }
+
+    /* // DESCOMENTAR PARA USAR EL DIÁLOGO DE PAGO
+    var showPaymentDialog by remember { mutableStateOf<Producto?>(null) }
+    */
 
     val productosPublicados = remember { mutableStateListOf<Producto>() }
     val comprasRealizadas = remember { mutableStateListOf<Producto>() }
@@ -72,6 +76,8 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
     val conversacionesSimuladas = remember { mutableStateMapOf<String, List<SimulatedMessage>>() }
 
     val historialChats = remember { mutableStateListOf<ChatRoom>() }
+
+    // Simulación de notificaciones para el vendedor
     var hasNewNotification by remember { mutableStateOf(false) }
     var simulatedSellerNotification by remember { mutableStateOf<String?>(null) }
 
@@ -103,18 +109,11 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                 comprador_id = miUsuarioId,
                 vendedor_id = producto.vendedor_id,
                 nombre_producto = producto.nombre,
-                nombre_interlocutor = if (producto.vendedor_id == miUsuarioId) "Comprador UAM" else "Vendedor UAM"
+                nombre_interlocutor = "Vendedor UAM"
             )
             activeChatRoom = nuevaSalaChat
             if (!historialChats.any { it.id == nuevaSalaChat.id }) {
                 historialChats.add(0, nuevaSalaChat)
-            }
-            coroutineScope.launch {
-                try {
-                    SupabaseNetwork.client.postgrest["chat_rooms"].insert(nuevaSalaChat)
-                } catch (e: Exception) {
-                    println("Error al crear la sala de chat en BD: ${e.message}")
-                }
             }
         }
         selectedProductToShow = null
@@ -171,14 +170,18 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                                 icon = { Icon(Icons.Default.Chat, contentDescription = "Mensajes") },
                                 label = { Text("Mensajes") },
                                 selected = selectedTab == 1,
-                                onClick = { selectedTab = 1; hasNewNotification = false },
+                                onClick = { selectedTab = 1 },
                                 colors = NavigationBarItemDefaults.colors(selectedIconColor = UAMGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
                             )
                             NavigationBarItem(
-                                icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
+                                icon = {
+                                    BadgedBox(badge = { if (hasNewNotification) Badge { Text("!") } }) {
+                                        Icon(Icons.Default.Person, contentDescription = "Perfil")
+                                    }
+                                },
                                 label = { Text("Perfil") },
                                 selected = selectedTab == 2,
-                                onClick = { selectedTab = 2 },
+                                onClick = { selectedTab = 2; hasNewNotification = false },
                                 colors = NavigationBarItemDefaults.colors(selectedIconColor = UAMGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
                             )
                         }
@@ -227,9 +230,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                                 compras = comprasRealizadas,
                                 ventas = ventasRealizadas,
                                 estadoPedidos = estadoPedidos,
-                                onMarcarEntregado = { prod ->
-                                    prod.id?.let { id -> estadoPedidos[id] = "Finalizado" }
-                                },
+                                onMarcarEntregado = { prod -> prod.id?.let { id -> estadoPedidos[id] = "Finalizado" } },
                                 onProductClick = { producto -> selectedProductToShow = producto },
                                 onLogoutClick = handleLogout
                             )
@@ -237,6 +238,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                     }
                 }
 
+                // Notificación emergente para el vendedor
                 if (simulatedSellerNotification != null && currentIsSellerMode) {
                     AlertDialog(
                         onDismissRequest = { simulatedSellerNotification = null },
@@ -245,11 +247,53 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                         text = { Text(simulatedSellerNotification!!, color = Color.White) },
                         confirmButton = {
                             Button(onClick = { simulatedSellerNotification = null }, colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)) {
-                                Text("Revisar Historial", color = Color.Black, fontWeight = FontWeight.Bold)
+                                Text("Entendido", color = Color.Black, fontWeight = FontWeight.Bold)
                             }
                         }
                     )
                 }
+
+                /* // DESCOMENTAR PARA HABILITAR EL FLUJO DE PAGO SIMULADO
+                if (showPaymentDialog != null) {
+                    val prod = showPaymentDialog!!
+                    AlertDialog(
+                        onDismissRequest = { showPaymentDialog = null },
+                        containerColor = Color(0xFF1E1E1E), titleContentColor = Color.White, textContentColor = Color.White, shape = RoundedCornerShape(24.dp),
+                        title = { Text("Método de Pago", fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text("Selecciona cómo deseas pagar:", color = Color.LightGray, fontSize = 14.sp)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        showPaymentDialog = null
+                                        // Aquí llamarías la lógica de compra directa
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)
+                                ) {
+                                    Icon(Icons.Default.AttachMoney, contentDescription = null, tint = Color.Black)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Efectivo (Al recibir)", color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        showPaymentDialog = null
+                                        // Aquí llamarías la lógica de compra directa
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(50.dp), border = BorderStroke(1.dp, UAMGreen), colors = ButtonDefaults.outlinedButtonColors(contentColor = UAMGreen)
+                                ) {
+                                    Icon(Icons.Default.CreditCard, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Tarjeta (**** 1234)", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        },
+                        confirmButton = {},
+                        dismissButton = { TextButton(onClick = { showPaymentDialog = null }) { Text("Cancelar", color = Color.Gray) } }
+                    )
+                }
+                */
 
                 if (showOrderSuccessDialog != null) {
                     val prod = showOrderSuccessDialog!!
@@ -331,34 +375,26 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                             producto = selectedProductToShow!!,
                             onClose = { selectedProductToShow = null },
                             onBuyProduct = {
+                                // /* SI DESCOMENTAS EL MÉTODO DE PAGO, CAMBIA LO DE ABAJO POR: showPaymentDialog = selectedProductToShow!! */
                                 val productoComprado = selectedProductToShow!!
                                 coroutineScope.launch {
                                     try {
+                                        // 1. DESAPARECER DEL MERCADO (Eliminar BD)
                                         SupabaseNetwork.client.postgrest["productos"].delete { filter { eq("id", productoComprado.id ?: 0L) } }
                                         productosPublicados.remove(productoComprado)
+
+                                        // 2. Agregar a Historiales
                                         comprasRealizadas.add(productoComprado)
                                         ventasRealizadas.add(productoComprado)
 
-                                        val generatedId = productoComprado.id ?: java.util.UUID.randomUUID().mostSignificantBits
-                                        estadoPedidos[generatedId] = "En curso"
+                                        val pId = productoComprado.id ?: 0L
+                                        estadoPedidos[pId] = "En curso"
 
-                                        val nuevaSalaChat = ChatRoom(
-                                            id = java.util.UUID.randomUUID().toString(),
-                                            producto_id = generatedId,
-                                            comprador_id = miUsuarioId,
-                                            vendedor_id = productoComprado.vendedor_id,
-                                            nombre_producto = productoComprado.nombre,
-                                            nombre_interlocutor = "Vendedor UAM"
-                                        )
-                                        if (!historialChats.any { it.nombre_producto == productoComprado.nombre }) {
-                                            historialChats.add(0, nuevaSalaChat)
-                                        }
-
-                                        simulatedSellerNotification = "Tu artículo '${productoComprado.nombre}' fue comprado por un estudiante. El estado del pedido se encuentra: EN CURSO."
+                                        simulatedSellerNotification = "Tu artículo '${productoComprado.nombre}' fue pedido por un estudiante. El estado del pedido se encuentra: EN CURSO."
                                         hasNewNotification = true
 
                                         selectedProductToShow = null
-                                        showOrderSuccessDialog = productoComprado.copy(id = generatedId)
+                                        showOrderSuccessDialog = productoComprado
                                     } catch (e: Exception) { println("Error al procesar compra: ${e.message}") }
                                 }
                             },
@@ -372,7 +408,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
 }
 
 // --------------------------------------------------------
-// SISTEMA DE CHAT SIMULADO CON BOTONES DE RESPUESTA RÁPIDA
+// SISTEMA DE CHAT SIMULADO CON ROLES CORREGIDOS (COMPRADOR)
 // --------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -381,23 +417,25 @@ fun SimulatedBuyerChatScreen(
     conversaciones: MutableMap<String, List<SimulatedMessage>>,
     onBackClick: () -> Unit
 ) {
+    // TÚ ERES EL COMPRADOR (isMe = true), EL BOT ES EL VENDEDOR (isMe = false)
     val messages = conversaciones[chatRoom.id] ?: listOf(
-        SimulatedMessage("¡Hola! Me interesa el artículo: ${chatRoom.nombre_producto}. ¿Sigue disponible? ¿Dónde nos vemos?", false)
+        SimulatedMessage("¡Hola! Me interesa tu artículo: ${chatRoom.nombre_producto}. ¿Sigue disponible para entrega?", true),
+        SimulatedMessage("¡Hola! Sí, claro. Sigue disponible. ¿Dónde te gustaría que te lo entregue?", false)
     )
 
     var currentMessages by remember(chatRoom.id) { mutableStateOf(messages) }
 
     val quickReplies = listOf(
-        "¡Hola! Sí, hoy en la cafetería",
+        "Hoy en la cafetería",
         "Mañana en la biblioteca",
-        "Escríbeme por WhatsApp",
-        "Solo acepto transferencias"
+        "Te escribo por WhatsApp",
+        "¿Aceptas transferencia?"
     )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(chatRoom.nombre_interlocutor ?: "Contacto UAM", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text(chatRoom.nombre_interlocutor ?: "Vendedor UAM", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = UAMGreen)
@@ -436,7 +474,7 @@ fun SimulatedBuyerChatScreen(
             }
 
             Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF121212)).padding(12.dp)) {
-                Text("Respuestas Rápidas", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+                Text("Tus Respuestas Rápidas", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(quickReplies) { reply ->
                         FilterChip(
@@ -444,9 +482,10 @@ fun SimulatedBuyerChatScreen(
                             onClick = {
                                 val updatedWithMe = currentMessages + SimulatedMessage(reply, true)
                                 val respuestaBot = when {
-                                    reply.contains("cafetería") -> "Dale de viaje, ahí te espero en la cafetería."
+                                    reply.contains("cafetería") -> "¡Nítido! Dale de viaje, ahí nos vemos en la cafetería."
                                     reply.contains("biblioteca") -> "Perfecto, me avisas cuando estés por los cubículos."
-                                    reply.contains("WhatsApp") -> "Dale, te paso mi número por interno."
+                                    reply.contains("WhatsApp") -> "Dale, mi número es 8888-8888. Escribime."
+                                    reply.contains("transferencia") -> "Sí claro, acepto transferencias sin problema."
                                     else -> "Entendido, sin problema. Quedamos así."
                                 }
                                 val finalMessages = updatedWithMe + SimulatedMessage(respuestaBot, false)
@@ -670,14 +709,10 @@ fun BuyerMarketContent(
 
     val productosFiltrados = remember(productos, searchQuery, selectedCondition, selectedFaculty) {
         productos.filter { prod ->
-            val matchesSearch = prod.nombre.contains(searchQuery, ignoreCase = true)
-            if (searchQuery.isNotBlank()) {
-                matchesSearch
-            } else {
-                val matchesFaculty = selectedFaculty == "Todos" || prod.categoria.trim().contains(selectedFaculty.trim(), ignoreCase = true)
-                val matchesCondition = selectedCondition == null || selectedCondition == "Precio Máx" || prod.estado.trim().equals(selectedCondition!!.trim(), ignoreCase = true)
-                matchesFaculty && matchesCondition
-            }
+            val matchesSearch = searchQuery.isBlank() || prod.nombre.contains(searchQuery.trim(), ignoreCase = true)
+            val matchesFaculty = selectedFaculty == "Todos" || prod.categoria.trim().contains(selectedFaculty.trim(), ignoreCase = true)
+            val matchesCondition = selectedCondition == null || selectedCondition == "Precio Máx" || prod.estado.trim().equals(selectedCondition!!.trim(), ignoreCase = true)
+            matchesSearch && matchesFaculty && matchesCondition
         }.let { listaFiltrada ->
             if (selectedCondition == "Precio Máx" && searchQuery.isBlank()) listaFiltrada.sortedBy { it.precio } else listaFiltrada
         }
@@ -932,7 +967,7 @@ fun FeaturedProductPlaceholder(index: Int) {
 }
 
 // --------------------------------------------------------
-// MODIFICADO: PERFIL DEL ESTUDIANTE CON HISTORIALES ESTILO PEDIDOS YA
+// PERFIL DEL ESTUDIANTE CON HISTORIALES Y PAGOS COMENTADOS
 // --------------------------------------------------------
 @Composable
 fun ProfileContent(
@@ -980,6 +1015,40 @@ fun ProfileContent(
                 }
             }
         }
+
+        /* // -------------------------------------------------------------------------
+        // DESCOMENTAR PARA USAR LA SECCIÓN DE MÉTODOS DE PAGO (ESTILO PEDIDOSYA)
+        // -------------------------------------------------------------------------
+        item { Spacer(modifier = Modifier.height(24.dp)) }
+        item {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Mis Métodos de Pago", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                TextButton(onClick = { /* Lógica para agregar tarjeta */ }) {
+                    Text("+ Agregar", color = UAMGreen, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().clickable { /* Seleccionar tarjeta */ },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, UAMGreen.copy(alpha = 0.5f))
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("•••• •••• •••• 4242", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Vence 12/28 - Predeterminada", color = Color.Gray, fontSize = 12.sp)
+                    }
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Seleccionada", tint = UAMGreen)
+                }
+            }
+        }
+        // -------------------------------------------------------------------------
+        */
 
         // PESTAÑAS DE NAVEGACIÓN INTERNA PARA EL HISTORIAL
         item { Spacer(modifier = Modifier.height(24.dp)) }
