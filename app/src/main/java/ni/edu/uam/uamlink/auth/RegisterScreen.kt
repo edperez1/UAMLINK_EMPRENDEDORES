@@ -2,7 +2,9 @@ package ni.edu.uam.uamlink.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -32,46 +34,77 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    Column(modifier = Modifier.fillMaxSize().background(UAMBackground).padding(24.dp)) {
-        IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = UAMTextPrimary) }
-        Text("Crea tu Cuenta", color = UAMGreen, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Spacer(modifier = Modifier.height(24.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(UAMBackground)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Botón de atrás
+        IconButton(onClick = onBackClick) {
+            Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = UAMTextPrimary)
+        }
 
-        UAMTextField(label = "Nombre Completo", value = fullName, onValueChange = { fullName = it })
-        UAMTextField(label = "CIF", value = cif, onValueChange = { cif = it })
-        UAMTextField(label = "Correo Institucional", value = email, onValueChange = { email = it })
-        UAMTextField(label = "Contraseña", value = password, onValueChange = { password = it }, isPassword = true)
-
-        if (errorMessage != null) { Text(text = errorMessage!!, color = UAMError, fontSize = 14.sp) }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                scope.launch {
-                    isLoading = true
-                    try {
-                        SupabaseNetwork.client.auth.signUpWith(Email) {
-                            this.email = email
-                            this.password = password
-                            this.data = buildJsonObject {
-                                put("full_name", fullName)
-                                put("cif", cif)
-                            }
-                        }
-                        onSuccess()
-                    } catch (e: Exception) {
-                        errorMessage = "Error: ${e.message}"
-                    } finally {
-                        isLoading = false
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)
+        // Columna compacta
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            // REDUCIDO: De 16.dp a 8.dp para que los campos estén más juntos
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (isLoading) CircularProgressIndicator(color = Color.White)
-            else Text("Registrarse", color = Color.White, fontWeight = FontWeight.Bold)
+            Text(
+                "Crea tu Cuenta",
+                color = UAMGreen,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Espacio pequeño debajo del título
+            Spacer(modifier = Modifier.height(4.dp))
+
+            UAMTextField(label = "Nombre Completo", value = fullName, onValueChange = { fullName = it })
+            UAMTextField(label = "CIF", value = cif, onValueChange = { cif = it })
+            UAMTextField(label = "Correo Institucional", value = email, onValueChange = { email = it })
+            UAMTextField(label = "Contraseña", value = password, onValueChange = { password = it }, isPassword = true)
+
+            if (errorMessage != null) {
+                Text(text = errorMessage!!, color = UAMError, fontSize = 12.sp)
+            }
+
+            // Espacio pequeño antes del botón
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        isLoading = true
+                        try {
+                            SupabaseNetwork.client.auth.signUpWith(Email) {
+                                this.email = email
+                                this.password = password
+                                this.data = buildJsonObject {
+                                    put("full_name", fullName)
+                                    put("cif", cif)
+                                }
+                            }
+                            onSuccess()
+                        } catch (e: Exception) {
+                            errorMessage = "Error: ${e.message}"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                else Text("Registrarse", color = Color.White, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
