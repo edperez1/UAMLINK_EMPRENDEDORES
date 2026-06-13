@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -46,6 +47,71 @@ import ni.edu.uam.uamlink.ui.theme.*
 // Modelo local para simular la persistencia de mensajes dentro del historial
 data class SimulatedMessage(val text: String, val isMe: Boolean)
 
+// 🔴 1. AQUI ESTAN LOS 6 PRODUCTOS ACADÉMICOS POR DEFAULT
+// Usan tu clase 'Producto' real para que la funcionalidad de Pedir/Chat trabaje perfecto
+val productosDestacadosDefault = listOf(
+    Producto(
+        id = -1L,
+        vendedor_id = "vendedor_uam_1",
+        nombre = "Calculadora Científica",
+        precio = 850.0,
+        categoria = "Ingeniería",
+        estado = "Como nuevo",
+        metodo_entrega = "Entrega a mano",
+        descripcion = "calculadora|Calculadora fx-991LA ideal para las clases de cálculo y física avanzada."
+    ),
+    Producto(
+        id = -2L,
+        vendedor_id = "vendedor_uam_2",
+        nombre = "Kit de Odontologia",
+        precio = 1200.0,
+        categoria = "Odontología",
+        estado = "Nuevo",
+        metodo_entrega = "Punto acordado",
+        descripcion = "kitodonto|Kit de exploración completo, acero inoxidable, alta durabilidad."
+    ),
+    Producto(
+        id = -3L,
+        vendedor_id = "vendedor_uam_3",
+        nombre = "Libro de Anatomía",
+        precio = 900.0,
+        categoria = "Medicina",
+        estado = "Buen estado",
+        metodo_entrega = "Entrega a mano",
+        descripcion = "libroanatomia|Atlas de Anatomía Humana de Netter. Edición con notas de estudio."
+    ),
+    Producto(
+        id = -4L,
+        vendedor_id = "vendedor_uam_4",
+        nombre = "Guía de Física",
+        precio = 450.0,
+        categoria = "Ingeniería",
+        estado = "Nuevo",
+        metodo_entrega = "Por envío",
+        descripcion = "librofisica|Guía completa de ejercicios resueltos para laboratorio de Física I y II."
+    ),
+    Producto(
+        id = -5L,
+        vendedor_id = "vendedor_uam_5",
+        nombre = "Código Civil",
+        precio = 300.0,
+        categoria = "Derecho",
+        estado = "Usado",
+        metodo_entrega = "Entrega a mano",
+        descripcion = "codigocivil|Código Civil actualizado, ideal para estudiantes de primer año."
+    ),
+    Producto(
+        id = -6L,
+        vendedor_id = "vendedor_uam_6",
+        nombre = "Bata de Laboratorio",
+        precio = 350.0,
+        categoria = "Medicina",
+        estado = "Como nuevo",
+        metodo_entrega = "Punto acordado",
+        descripcion = "bata|Bata blanca manga larga talla M, usada un solo semestre."
+    )
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
@@ -53,6 +119,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
     var currentIsSellerMode by remember { mutableStateOf(isSeller) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     var showPublishSheet by remember { mutableStateOf(false) }
     var productToEdit by remember { mutableStateOf<Producto?>(null) } // Estado para Edición
     var selectedProductToShow by remember { mutableStateOf<Producto?>(null) }
@@ -61,11 +128,8 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
     var showUAMBot by remember { mutableStateOf(false) }
     var showOrderSuccessDialog by remember { mutableStateOf<Producto?>(null) }
 
-    /* // DESCOMENTAR PARA USAR EL DIÁLOGO DE PAGO
-    var showPaymentDialog by remember { mutableStateOf<Producto?>(null) }
-    */
-
     val productosPublicados = remember { mutableStateListOf<Producto>() }
+
     val comprasRealizadas = remember { mutableStateListOf<Producto>() }
     val ventasRealizadas = remember { mutableStateListOf<Producto>() }
 
@@ -112,6 +176,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                 nombre_interlocutor = "Vendedor UAM"
             )
             activeChatRoom = nuevaSalaChat
+
             if (!historialChats.any { it.id == nuevaSalaChat.id }) {
                 historialChats.add(0, nuevaSalaChat)
             }
@@ -145,6 +210,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                 onBackClick = { activeChatRoom = null }
             )
         }
+
         showUAMBot -> {
             UAMBotScreen(onBackClick = { showUAMBot = false })
         }
@@ -253,48 +319,6 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                     )
                 }
 
-                /* // DESCOMENTAR PARA HABILITAR EL FLUJO DE PAGO SIMULADO
-                if (showPaymentDialog != null) {
-                    val prod = showPaymentDialog!!
-                    AlertDialog(
-                        onDismissRequest = { showPaymentDialog = null },
-                        containerColor = Color(0xFF1E1E1E), titleContentColor = Color.White, textContentColor = Color.White, shape = RoundedCornerShape(24.dp),
-                        title = { Text("Método de Pago", fontWeight = FontWeight.Bold) },
-                        text = {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("Selecciona cómo deseas pagar:", color = Color.LightGray, fontSize = 14.sp)
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = {
-                                        showPaymentDialog = null
-                                        // Aquí llamarías la lógica de compra directa
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)
-                                ) {
-                                    Icon(Icons.Default.AttachMoney, contentDescription = null, tint = Color.Black)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Efectivo (Al recibir)", color = Color.Black, fontWeight = FontWeight.Bold)
-                                }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                OutlinedButton(
-                                    onClick = {
-                                        showPaymentDialog = null
-                                        // Aquí llamarías la lógica de compra directa
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(50.dp), border = BorderStroke(1.dp, UAMGreen), colors = ButtonDefaults.outlinedButtonColors(contentColor = UAMGreen)
-                                ) {
-                                    Icon(Icons.Default.CreditCard, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Tarjeta (**** 1234)", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        },
-                        confirmButton = {},
-                        dismissButton = { TextButton(onClick = { showPaymentDialog = null }) { Text("Cancelar", color = Color.Gray) } }
-                    )
-                }
-                */
-
                 if (showOrderSuccessDialog != null) {
                     val prod = showOrderSuccessDialog!!
                     AlertDialog(
@@ -375,11 +399,11 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                             producto = selectedProductToShow!!,
                             onClose = { selectedProductToShow = null },
                             onBuyProduct = {
-                                // /* SI DESCOMENTAS EL MÉTODO DE PAGO, CAMBIA LO DE ABAJO POR: showPaymentDialog = selectedProductToShow!! */
                                 val productoComprado = selectedProductToShow!!
                                 coroutineScope.launch {
                                     try {
                                         // 1. DESAPARECER DEL MERCADO (Eliminar BD)
+                                        // Si el ID es negativo (producto default), esto simplemente se ignorará sin crashear.
                                         SupabaseNetwork.client.postgrest["productos"].delete { filter { eq("id", productoComprado.id ?: 0L) } }
                                         productosPublicados.remove(productoComprado)
 
@@ -417,7 +441,6 @@ fun SimulatedBuyerChatScreen(
     conversaciones: MutableMap<String, List<SimulatedMessage>>,
     onBackClick: () -> Unit
 ) {
-    // TÚ ERES EL COMPRADOR (isMe = true), EL BOT ES EL VENDEDOR (isMe = false)
     val messages = conversaciones[chatRoom.id] ?: listOf(
         SimulatedMessage("¡Hola! Me interesa tu artículo: ${chatRoom.nombre_producto}. ¿Sigue disponible para entrega?", true),
         SimulatedMessage("¡Hola! Sí, claro. Sigue disponible. ¿Dónde te gustaría que te lo entregue?", false)
@@ -720,6 +743,7 @@ fun BuyerMarketContent(
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         item { Spacer(modifier = Modifier.height(20.dp)) }
+
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Mercado Campus Link", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -735,6 +759,7 @@ fun BuyerMarketContent(
         item { Spacer(modifier = Modifier.height(24.dp)) }
         item { UAMTextField(label = "Buscar tu próximo artículo UAM...", value = searchQuery, onValueChange = { searchQuery = it }) }
         item { Spacer(modifier = Modifier.height(24.dp)) }
+
         item { Text("Filtrar por:", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item {
@@ -745,6 +770,7 @@ fun BuyerMarketContent(
                 }
             }
         }
+
         item { Spacer(modifier = Modifier.height(24.dp)) }
         item { Text("Categorías de Facultad", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
         item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -757,17 +783,40 @@ fun BuyerMarketContent(
             }
         }
         item { Spacer(modifier = Modifier.height(32.dp)) }
-        item { Text("Productos Destacados", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+
+        // 🔴 2. SECCIÓN DE PRODUCTOS DESTACADOS VINCULADA AL 'onClick'
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Productos Destacados", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    text = "Ver todos",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = UAMGreen,
+                    modifier = Modifier.clickable { /* Acción opcional */ }
+                )
+            }
+        }
         item { Spacer(modifier = Modifier.height(12.dp)) }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (productos.isEmpty()) {
-                    items(2) { index -> FeaturedProductPlaceholder(index) }
-                } else {
-                    items(productos.take(4)) { producto -> FeaturedProductCard(producto, onClick = { onProductClick(producto) }) }
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 8.dp)
+            ) {
+                // Iteramos la lista default académica y le pasamos tu función onProductClick
+                items(productosDestacadosDefault) { producto ->
+                    ProductoDestacadoCard(
+                        producto = producto,
+                        onClick = { onProductClick(producto) }
+                    )
                 }
             }
         }
+
         item { Spacer(modifier = Modifier.height(32.dp)) }
         item { Text("Todos los artículos", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
         item { Spacer(modifier = Modifier.height(12.dp)) }
@@ -785,6 +834,139 @@ fun BuyerMarketContent(
         item { Spacer(modifier = Modifier.height(100.dp)) }
     }
 }
+
+// 🔴 3. COMPONENTE VISUAL CON EL "COSITO DE PEDIR" Y LOGICA COMPLETA
+
+
+
+
+
+
+
+@Composable
+fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // 1. Extraemos la lógica: "nombreImagen|DescripcionReal"
+    // Usamos ?. y ?: para evitar el error de "nullable receiver"
+    val datos = producto.descripcion?.split("|") ?: listOf("placeholder", "Sin descripción")
+    val nombreImagen = datos.firstOrNull() ?: "placeholder"
+    val descripcionReal = if (datos.size > 1) datos[1] else ""
+
+    // 2. Buscamos el ID del recurso en drawable
+    val imageResId = remember(nombreImagen) {
+        context.resources.getIdentifier(nombreImagen, "drawable", context.packageName)
+    }
+
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .shadow(6.dp, RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column {
+            // Box de la Imagen
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(Color(0xFFE0E0E0))
+            ) {
+                if (imageResId != 0) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = imageResId),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    // Si no encuentra la imagen, muestra el icono por defecto
+                    Icon(
+                        imageVector = Icons.Default.MenuBook,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(48.dp).align(Alignment.Center)
+                    )
+                }
+
+                // Etiqueta de categoría
+                Box(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = producto.categoria,
+                        color = Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Info del producto
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = producto.nombre,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.School, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = producto.estado,
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        maxLines = 1
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "C$ ${producto.precio}",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = UAMGreen // Asegúrate de tener definido este color
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(UAMGreen, CircleShape)
+                            .clickable { onClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingBag,
+                            contentDescription = "Pedir",
+                            tint = Color.Black,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
 
 @Composable
 fun MessagesHistoryContent(chats: List<ChatRoom>, onChatClick: (ChatRoom) -> Unit, onBotClick: () -> Unit) {
@@ -838,7 +1020,8 @@ fun MessagesHistoryContent(chats: List<ChatRoom>, onChatClick: (ChatRoom) -> Uni
 @Composable
 fun UAMBotScreen(onBackClick: () -> Unit) {
     data class BotMsg(val text: String, val isUser: Boolean)
-    val messages = remember { mutableStateListOf(BotMsg("¡Hola! Soy UAMBot 🤖. ¿En qué te puedo ayudar hoy con Campus Link?", false)) }
+
+    val messages = remember { mutableStateListOf(BotMsg("¡Hola! Soy UAMBot 🤖.\n¿En qué te puedo ayudar hoy con Campus Link?", false)) }
     val commonQuestions = listOf("¿Cómo publico un artículo?", "¿Es seguro comprar aquí?", "¿Dónde se entrega el producto?")
 
     Scaffold(
@@ -940,32 +1123,6 @@ fun ProductListItem(producto: Producto, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun FeaturedProductCard(producto: Producto, onClick: () -> Unit) {
-    Card(modifier = Modifier.width(150.dp).height(200.dp).clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), shape = RoundedCornerShape(20.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Box(modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(32.dp)) }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(producto.nombre, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("C$ ${producto.precio}", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
-}
-
-@Composable
-fun FeaturedProductPlaceholder(index: Int) {
-    Card(modifier = Modifier.width(150.dp).height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), shape = RoundedCornerShape(20.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Box(modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(32.dp)) }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Artículo UAM ${index + 1}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("C$ 250.00", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
-}
-
 // --------------------------------------------------------
 // PERFIL DEL ESTUDIANTE CON HISTORIALES Y PAGOS COMENTADOS
 // --------------------------------------------------------
@@ -1015,40 +1172,6 @@ fun ProfileContent(
                 }
             }
         }
-
-        /* // -------------------------------------------------------------------------
-        // DESCOMENTAR PARA USAR LA SECCIÓN DE MÉTODOS DE PAGO (ESTILO PEDIDOSYA)
-        // -------------------------------------------------------------------------
-        item { Spacer(modifier = Modifier.height(24.dp)) }
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Mis Métodos de Pago", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                TextButton(onClick = { /* Lógica para agregar tarjeta */ }) {
-                    Text("+ Agregar", color = UAMGreen, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        item { Spacer(modifier = Modifier.height(12.dp)) }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable { /* Seleccionar tarjeta */ },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, UAMGreen.copy(alpha = 0.5f))
-            ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CreditCard, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("•••• •••• •••• 4242", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Vence 12/28 - Predeterminada", color = Color.Gray, fontSize = 12.sp)
-                    }
-                    Icon(Icons.Default.CheckCircle, contentDescription = "Seleccionada", tint = UAMGreen)
-                }
-            }
-        }
-        // -------------------------------------------------------------------------
-        */
 
         // PESTAÑAS DE NAVEGACIÓN INTERNA PARA EL HISTORIAL
         item { Spacer(modifier = Modifier.height(24.dp)) }
