@@ -1,6 +1,7 @@
 package ni.edu.uam.uamlink.auth
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,7 +29,7 @@ fun RoleSelectionScreen(onNavigateHome: (Boolean) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(UAMBackground)
+            .background(LightGreenBg)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center // Centramos todo verticalmente
@@ -36,7 +37,7 @@ fun RoleSelectionScreen(onNavigateHome: (Boolean) -> Unit) {
         // Título con más impacto
         Text(
             text = "Campus Link",
-            color = UAMGreen,
+            color = VividGreen,
             fontSize = 36.sp,
             fontWeight = FontWeight.Black
         )
@@ -45,7 +46,7 @@ fun RoleSelectionScreen(onNavigateHome: (Boolean) -> Unit) {
 
         Text(
             text = "¿Qué deseas hacer hoy?",
-            color = Color.White.copy(alpha = 0.8f),
+            color = TextPrimary.copy(alpha = 0.8f),
             fontSize = 18.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 32.dp)
@@ -76,7 +77,7 @@ fun RoleSelectionScreen(onNavigateHome: (Boolean) -> Unit) {
 
         // Botón con animación de color
         val buttonColor by animateColorAsState(
-            targetValue = if (isSeller != null) UAMGreen else Color.DarkGray,
+            targetValue = if (isSeller != null) VividGreen else Color.LightGray,
             label = "buttonColor"
         )
 
@@ -91,7 +92,7 @@ fun RoleSelectionScreen(onNavigateHome: (Boolean) -> Unit) {
                 "Ingresar",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isSeller != null) Color.Black else Color.Gray
+                color = Color.White
             )
         }
     }
@@ -99,16 +100,16 @@ fun RoleSelectionScreen(onNavigateHome: (Boolean) -> Unit) {
 
 @Composable
 fun RoleCard(title: String, desc: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
-    val borderColor = if (isSelected) UAMGreen else Color.Transparent
+    val borderColor = if (isSelected) VividGreen else Color.Transparent
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-        border = androidx.compose.foundation.BorderStroke(2.dp, borderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 0.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(2.dp, borderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(24.dp),
@@ -117,14 +118,14 @@ fun RoleCard(title: String, desc: String, icon: ImageVector, isSelected: Boolean
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isSelected) UAMGreen else Color.White,
+                tint = if (isSelected) VividGreen else Color.Gray,
                 modifier = Modifier.size(40.dp)
             )
             Spacer(modifier = Modifier.width(20.dp))
             Column {
-                Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(desc, color = Color.Gray, fontSize = 13.sp, lineHeight = 18.sp)
+                Text(desc, color = TextSecondary, fontSize = 13.sp, lineHeight = 18.sp)
             }
         }
     }

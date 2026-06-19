@@ -30,19 +30,21 @@ fun WelcomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(UAMBackground)
-            .padding(horizontal = 24.dp, vertical = 24.dp),
+            .background(LightGreenBg)
+            .padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // --- BOTÓN OMITIR (ARRIBA) ---
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(onClick = onSkipClick) {
                 Text(
                     text = "Omitir",
-                    color = UAMTextPrimary,
+                    color = TextPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -54,31 +56,31 @@ fun WelcomeScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState()), // Evita que se corte en pantallas chicas
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center // Esto centrará todo el bloque unido en la pantalla
         ) {
 
-            // LOGO ENORME: Solucionado el error de compilación manteniendo el mismo tamaño visual
+            // LOGO OPTIMIZADO: Sin altura fija para eliminar el espacio vacío de image_562917.png
             Image(
-                painter = painterResource(id = R.drawable.logouamlinkprincipal),
+                painter = painterResource(id = R.drawable.logonuevouamlink),
                 contentDescription = "Logo UAM Link",
                 modifier = Modifier
-                    .requiredWidth(360.dp) // Usa un ancho fijo grande para mantenerlo gigante sin usar fracciones ilegales
-                    .height(180.dp),
-                contentScale = ContentScale.FillWidth
+                    .fillMaxWidth(), // Toma todo el ancho; la altura se adapta solita a la forma del logo
+                contentScale = ContentScale.FillWidth // Forzamos a que se estire a los lados al máximo
             )
 
-            // ESPACIO PEQUEÑO: Para que el texto quede justo abajo del logo
+            // ESPACIO CONTROLADO: Ahora el texto estará justo debajo del logo
             Spacer(modifier = Modifier.height(16.dp))
 
             // Título pegado al logo
             Text(
                 text = "¡Te damos la bienvenida!",
-                color = UAMTextPrimary,
+                color = TextPrimary,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.ExtraBold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -86,10 +88,10 @@ fun WelcomeScreen(
             // Subtítulo
             Text(
                 text = "El mercado exclusivo de la comunidad universitaria. Compra, vende y conecta.",
-                color = UAMTextSecondary,
+                color = TextSecondary,
                 fontSize = 15.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 32.dp)
             )
         }
 
@@ -97,13 +99,13 @@ fun WelcomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
+                .padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Botón Iniciar sesión
             Button(
                 onClick = onLoginClick,
-                colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = VividGreen),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
@@ -111,7 +113,7 @@ fun WelcomeScreen(
             ) {
                 Text(
                     text = "Iniciar sesión",
-                    color = Color.Black,
+                    color = Color.White,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 16.sp
                 )
@@ -122,7 +124,7 @@ fun WelcomeScreen(
             // Botón Registrarse
             OutlinedButton(
                 onClick = onRegisterClick,
-                border = BorderStroke(2.dp, UAMTextPrimary),
+                border = BorderStroke(2.dp, VividGreen),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
@@ -130,7 +132,7 @@ fun WelcomeScreen(
             ) {
                 Text(
                     text = "Registrarse",
-                    color = UAMTextPrimary,
+                    color = VividGreen,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )

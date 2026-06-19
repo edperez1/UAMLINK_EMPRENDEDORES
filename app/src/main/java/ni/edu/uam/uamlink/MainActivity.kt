@@ -19,7 +19,7 @@ import ni.edu.uam.uamlink.auth.WelcomeScreen
 import ni.edu.uam.uamlink.auth.RoleSelectionScreen
 import ni.edu.uam.uamlink.auth.HomeScreen
 import ni.edu.uam.uamlink.ui.theme.UAMlinkTheme
-import ni.edu.uam.uamlink.ui.theme.UAMBackground
+import ni.edu.uam.uamlink.ui.theme.LightGreenBg // Importamos el color correcto
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +27,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             UAMlinkTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = UAMBackground) {
+                // Cambiado UAMBackground por LightGreenBg para consistencia visual
+                Surface(modifier = Modifier.fillMaxSize(), color = LightGreenBg) {
                     AppNavigation()
                 }
             }

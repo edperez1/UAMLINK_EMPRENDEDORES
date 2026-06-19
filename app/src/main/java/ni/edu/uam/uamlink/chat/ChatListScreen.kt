@@ -63,22 +63,22 @@ fun ChatListScreen(onChatClick: (ChatRoom) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mensajes Campus Link", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 22.sp) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = UAMBackground)
+                title = { Text("Mensajes Campus Link", color = VividGreen, fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = LightGreenBg)
             )
         },
-        containerColor = UAMBackground
+        containerColor = LightGreenBg
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(UAMBackground)
+                .background(LightGreenBg)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = UAMGreen
+                    color = VividGreen
                 )
             } else if (chatRooms.isEmpty()) {
                 Column(
@@ -127,7 +127,7 @@ fun ChatRoomItem(chatRoom: ChatRoom, onClick: () -> Unit) {
                     .background(Color(0xFF2C2C2C), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Store, contentDescription = null, tint = UAMGreen)
+                Icon(Icons.Default.Store, contentDescription = null, tint = VividGreen)
             }
 
             Spacer(modifier = Modifier.width(16.dp))

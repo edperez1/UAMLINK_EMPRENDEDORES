@@ -9,6 +9,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -30,15 +31,22 @@ fun UAMTextField(
         shape = RoundedCornerShape(12.dp),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = UAMSurface,
-            unfocusedContainerColor = UAMSurface,
-            focusedBorderColor = UAMGreen,
-            unfocusedBorderColor = UAMBorder,
-            cursorColor = UAMGreen,
-            focusedTextColor = UAMTextPrimary,
-            unfocusedTextColor = UAMTextPrimary,
-            focusedLabelColor = UAMGreen,
-            unfocusedLabelColor = UAMTextSecondary
+            // Usamos Color.White para el fondo de los campos de texto según tu Theme.kt
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+
+            // Usamos tu color principal definido en la paleta
+            focusedBorderColor = VividGreen,
+            unfocusedBorderColor = LightGray,
+            cursorColor = VividGreen,
+
+            // Usamos los colores de texto definidos
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary,
+
+            // Colores para el label
+            focusedLabelColor = VividGreen,
+            unfocusedLabelColor = TextSecondary
         )
     )
     Spacer(modifier = Modifier.height(16.dp))

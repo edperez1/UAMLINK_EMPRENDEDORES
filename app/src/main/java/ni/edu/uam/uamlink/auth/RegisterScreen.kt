@@ -37,13 +37,13 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(UAMBackground)
+            .background(LightGreenBg)
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
         // Botón de atrás
         IconButton(onClick = onBackClick) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = UAMTextPrimary)
+            Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = TextPrimary)
         }
 
         // Columna compacta
@@ -57,7 +57,7 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
         ) {
             Text(
                 "Crea tu Cuenta",
-                color = UAMGreen,
+                color = VividGreen,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -71,7 +71,7 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
             UAMTextField(label = "Contraseña", value = password, onValueChange = { password = it }, isPassword = true)
 
             if (errorMessage != null) {
-                Text(text = errorMessage!!, color = UAMError, fontSize = 12.sp)
+                Text(text = errorMessage!!, color = Color.Red, fontSize = 12.sp)
             }
 
             // Espacio pequeño antes del botón
@@ -99,7 +99,7 @@ fun RegisterScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = VividGreen),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))

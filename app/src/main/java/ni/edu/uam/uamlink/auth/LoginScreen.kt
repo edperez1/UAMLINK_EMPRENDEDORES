@@ -36,7 +36,7 @@ fun LoginScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    Column(modifier = Modifier.fillMaxSize().background(UAMBackground)) {
+    Column(modifier = Modifier.fillMaxSize().background(LightGreenBg)) {
 
         // 1. Banner Integrado
         Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
@@ -52,7 +52,7 @@ fun LoginScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, UAMBackground),
+                            colors = listOf(Color.Transparent, LightGreenBg),
                             startY = 100f
                         )
                     )
@@ -78,7 +78,7 @@ fun LoginScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
         ) {
             Text(
                 "Inicia Sesión",
-                color = UAMGreen,
+                color = VividGreen,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -111,7 +111,7 @@ fun LoginScreen(onBackClick: () -> Unit, onSuccess: () -> Unit) {
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = VividGreen),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))

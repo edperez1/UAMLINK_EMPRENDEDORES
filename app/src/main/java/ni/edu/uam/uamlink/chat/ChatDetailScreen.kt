@@ -95,7 +95,7 @@ fun ChatDetailScreen(
                 title = {
                     Column {
                         Text(chatRoom.nombre_interlocutor ?: "Estudiante UAM", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text(chatRoom.nombre_producto ?: "Artículo", color = UAMGreen, fontSize = 12.sp)
+                        Text(chatRoom.nombre_producto ?: "Artículo", color = VividGreen, fontSize = 12.sp)
                     }
                 },
                 navigationIcon = {
@@ -129,7 +129,7 @@ fun ChatDetailScreen(
                             focusManager.clearFocus()
                         }),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = UAMGreen,
+                            focusedBorderColor = VividGreen,
                             unfocusedBorderColor = Color.DarkGray,
                             focusedTextColor = Color.White
                         ),
@@ -141,7 +141,7 @@ fun ChatDetailScreen(
                     IconButton(
                         onClick = { enviarMensajeAccion() },
                         modifier = Modifier
-                            .background(UAMGreen, CircleShape)
+                            .background(VividGreen, CircleShape)
                             .size(48.dp)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar", tint = Color.Black)
@@ -149,14 +149,14 @@ fun ChatDetailScreen(
                 }
             }
         },
-        containerColor = UAMBackground
+        containerColor = LightGreenBg
     ) { paddingValues ->
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(UAMBackground)
+                .background(LightGreenBg)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -175,7 +175,7 @@ fun MessageBubble(mensaje: Mensaje, esMio: Boolean) {
         contentAlignment = if (esMio) Alignment.CenterEnd else Alignment.CenterStart
     ) {
         Surface(
-            color = if (esMio) UAMGreen else Color(0xFF1E1E1E),
+            color = if (esMio) VividGreen else Color(0xFF1E1E1E),
             shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,

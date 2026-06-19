@@ -48,7 +48,6 @@ import ni.edu.uam.uamlink.ui.theme.*
 data class SimulatedMessage(val text: String, val isMe: Boolean)
 
 // 🔴 1. AQUI ESTAN LOS 6 PRODUCTOS ACADÉMICOS POR DEFAULT
-// Usan tu clase 'Producto' real para que la funcionalidad de Pedir/Chat trabaje perfecto
 val productosDestacadosDefault = listOf(
     Producto(
         id = -1L,
@@ -121,7 +120,7 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var showPublishSheet by remember { mutableStateOf(false) }
-    var productToEdit by remember { mutableStateOf<Producto?>(null) } // Estado para Edición
+    var productToEdit by remember { mutableStateOf<Producto?>(null) }
     var selectedProductToShow by remember { mutableStateOf<Producto?>(null) }
 
     var activeChatRoom by remember { mutableStateOf<ChatRoom?>(null) }
@@ -133,15 +132,12 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
     val comprasRealizadas = remember { mutableStateListOf<Producto>() }
     val ventasRealizadas = remember { mutableStateListOf<Producto>() }
 
-    // Control de estados estilo PedidosYa (ID de Producto -> "En curso" o "Finalizado")
     val estadoPedidos = remember { mutableStateMapOf<Long, String>() }
 
-    // Persistencia de los mensajes simulados indexados por el id de la sala de chat
     val conversacionesSimuladas = remember { mutableStateMapOf<String, List<SimulatedMessage>>() }
 
     val historialChats = remember { mutableStateListOf<ChatRoom>() }
 
-    // Simulación de notificaciones para el vendedor
     var hasNewNotification by remember { mutableStateOf(false) }
     var simulatedSellerNotification by remember { mutableStateOf<String?>(null) }
 
@@ -222,22 +218,22 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                             .shadow(8.dp, RoundedCornerShape(32.dp))
                             .clip(RoundedCornerShape(32.dp)),
-                        color = Color(0xFF1E1E1E)
+                        color = Color.White
                     ) {
-                        NavigationBar(containerColor = Color.Transparent, contentColor = Color.White, tonalElevation = 0.dp) {
+                        NavigationBar(containerColor = Color.Transparent, contentColor = TextPrimary, tonalElevation = 0.dp) {
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Store, contentDescription = "Mercado") },
                                 label = { Text("Campus") },
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 },
-                                colors = NavigationBarItemDefaults.colors(selectedIconColor = UAMGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
+                                colors = NavigationBarItemDefaults.colors(selectedIconColor = VividGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
                             )
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Chat, contentDescription = "Mensajes") },
                                 label = { Text("Mensajes") },
                                 selected = selectedTab == 1,
                                 onClick = { selectedTab = 1 },
-                                colors = NavigationBarItemDefaults.colors(selectedIconColor = UAMGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
+                                colors = NavigationBarItemDefaults.colors(selectedIconColor = VividGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
                             )
                             NavigationBarItem(
                                 icon = {
@@ -248,13 +244,13 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                                 label = { Text("Perfil") },
                                 selected = selectedTab == 2,
                                 onClick = { selectedTab = 2; hasNewNotification = false },
-                                colors = NavigationBarItemDefaults.colors(selectedIconColor = UAMGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
+                                colors = NavigationBarItemDefaults.colors(selectedIconColor = VividGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent)
                             )
                         }
                     }
                 }
             ) { paddingValues ->
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues).background(UAMBackground)) {
+                Box(modifier = Modifier.fillMaxSize().padding(paddingValues).background(LightGreenBg)) {
                     when (selectedTab) {
                         0 -> {
                             if (currentIsSellerMode) {
@@ -304,16 +300,15 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                     }
                 }
 
-                // Notificación emergente para el vendedor
                 if (simulatedSellerNotification != null && currentIsSellerMode) {
                     AlertDialog(
                         onDismissRequest = { simulatedSellerNotification = null },
-                        containerColor = Color(0xFF1E1E1E),
-                        title = { Text("¡Nueva Venta Detectada!", color = UAMGreen, fontWeight = FontWeight.Bold) },
-                        text = { Text(simulatedSellerNotification!!, color = Color.White) },
+                        containerColor = Color.White,
+                        title = { Text("¡Nueva Venta Detectada!", color = VividGreen, fontWeight = FontWeight.Bold) },
+                        text = { Text(simulatedSellerNotification!!, color = TextPrimary) },
                         confirmButton = {
-                            Button(onClick = { simulatedSellerNotification = null }, colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)) {
-                                Text("Entendido", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Button(onClick = { simulatedSellerNotification = null }, colors = ButtonDefaults.buttonColors(containerColor = VividGreen)) {
+                                Text("Entendido", color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
                     )
@@ -323,19 +318,19 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                     val prod = showOrderSuccessDialog!!
                     AlertDialog(
                         onDismissRequest = { showOrderSuccessDialog = null },
-                        containerColor = Color(0xFF1E1E1E),
-                        titleContentColor = UAMGreen,
-                        textContentColor = Color.White,
+                        containerColor = Color.White,
+                        titleContentColor = VividGreen,
+                        textContentColor = TextPrimary,
                         shape = RoundedCornerShape(24.dp),
                         title = { Text("¡Pedido Confirmado!", fontWeight = FontWeight.Bold) },
                         text = { Text("Has solicitado exitosamente el artículo: ${prod.nombre}. El vendedor ha sido notificado y el pedido está En curso. ¿Deseas coordinar la entrega?") },
                         confirmButton = {
-                            Button(onClick = { iniciarChat(prod) }, colors = ButtonDefaults.buttonColors(containerColor = UAMGreen)) {
-                                Text("Contactar Vendedor", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Button(onClick = { iniciarChat(prod) }, colors = ButtonDefaults.buttonColors(containerColor = VividGreen)) {
+                                Text("Contactar Vendedor", color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showOrderSuccessDialog = null }) { Text("Cerrar", color = Color.Gray) }
+                            TextButton(onClick = { showOrderSuccessDialog = null }) { Text("Cerrar", color = TextSecondary) }
                         }
                     )
                 }
@@ -344,8 +339,8 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                     ModalBottomSheet(
                         onDismissRequest = { showPublishSheet = false; productToEdit = null },
                         sheetState = sheetState,
-                        containerColor = Color(0xFF121212),
-                        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+                        containerColor = Color.White,
+                        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.LightGray) }
                     ) {
                         PublishProductForm(
                             productoAEditar = productToEdit,
@@ -392,8 +387,8 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                     ModalBottomSheet(
                         onDismissRequest = { selectedProductToShow = null },
                         sheetState = sheetState,
-                        containerColor = Color(0xFF1E1E1E),
-                        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+                        containerColor = Color.White,
+                        dragHandle = { BottomSheetDefaults.DragHandle(color = Color.LightGray) }
                     ) {
                         ProductDetailsSheet(
                             producto = selectedProductToShow!!,
@@ -402,12 +397,9 @@ fun HomeScreen(isSeller: Boolean, onLogout: () -> Unit) {
                                 val productoComprado = selectedProductToShow!!
                                 coroutineScope.launch {
                                     try {
-                                        // 1. DESAPARECER DEL MERCADO (Eliminar BD)
-                                        // Si el ID es negativo (producto default), esto simplemente se ignorará sin crashear.
                                         SupabaseNetwork.client.postgrest["productos"].delete { filter { eq("id", productoComprado.id ?: 0L) } }
                                         productosPublicados.remove(productoComprado)
 
-                                        // 2. Agregar a Historiales
                                         comprasRealizadas.add(productoComprado)
                                         ventasRealizadas.add(productoComprado)
 
@@ -458,16 +450,16 @@ fun SimulatedBuyerChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(chatRoom.nombre_interlocutor ?: "Vendedor UAM", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text(chatRoom.nombre_interlocutor ?: "Vendedor UAM", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = UAMGreen)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = VividGreen)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF121212))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
-        containerColor = Color(0xFF1E1E1E)
+        containerColor = LightGreenBg
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp), reverseLayout = false) {
@@ -480,7 +472,7 @@ fun SimulatedBuyerChatScreen(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (msg.isMe) UAMGreen else Color(0xFF2C2C2C),
+                                    color = if (msg.isMe) VividGreen else Color.White,
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .padding(12.dp)
@@ -488,7 +480,7 @@ fun SimulatedBuyerChatScreen(
                         ) {
                             Text(
                                 text = msg.text,
-                                color = if (msg.isMe) Color.Black else Color.White,
+                                color = if (msg.isMe) Color.White else TextPrimary,
                                 fontSize = 14.sp
                             )
                         }
@@ -496,8 +488,8 @@ fun SimulatedBuyerChatScreen(
                 }
             }
 
-            Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF121212)).padding(12.dp)) {
-                Text("Tus Respuestas Rápidas", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Column(modifier = Modifier.fillMaxWidth().background(Color.White).padding(12.dp)) {
+                Text("Tus Respuestas Rápidas", color = TextSecondary, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(quickReplies) { reply ->
                         FilterChip(
@@ -515,8 +507,8 @@ fun SimulatedBuyerChatScreen(
                                 currentMessages = finalMessages
                                 conversaciones[chatRoom.id] = finalMessages
                             },
-                            label = { Text(reply, color = Color.White) },
-                            colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF2C2C2C)),
+                            label = { Text(reply, color = TextPrimary) },
+                            colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFFF5F5F5)),
                             shape = CircleShape
                         )
                     }
@@ -551,72 +543,72 @@ fun PublishProductForm(
     ) { uri: Uri? -> selectedImageUri = uri }
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp).verticalScroll(scrollState), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(if(productoAEditar == null) "Publicar Nuevo Artículo" else "Editar Artículo", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(if(productoAEditar == null) "Publicar Nuevo Artículo" else "Editar Artículo", color = TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(24.dp))
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(160.dp)
-                .background(Color(0xFF1E1E1E), RoundedCornerShape(24.dp))
-                .border(1.dp, if (selectedImageUri != null) UAMGreen else UAMGreen.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                .background(Color(0xFFF5F5F5), RoundedCornerShape(24.dp))
+                .border(1.dp, if (selectedImageUri != null) VividGreen else VividGreen.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
                 .clip(RoundedCornerShape(24.dp))
                 .clickable { photoPickerLauncher.launch("image/*") },
             contentAlignment = Alignment.Center
         ) {
             if (selectedImageUri != null) {
-                Text("✅ Imagen Seleccionada", color = UAMGreen, fontWeight = FontWeight.Bold)
+                Text("✅ Imagen Seleccionada", color = VividGreen, fontWeight = FontWeight.Bold)
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = UAMGreen, modifier = Modifier.size(40.dp))
+                    Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = VividGreen, modifier = Modifier.size(40.dp))
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Toca para subir una foto de tu galería", color = Color.Gray, fontSize = 12.sp)
+                    Text("Toca para subir una foto de tu galería", color = TextSecondary, fontSize = 12.sp)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedTextField(
-            value = productName, onValueChange = { productName = it; showError = false }, label = { Text("¿Qué vas a vender?", color = Color.Gray) },
+            value = productName, onValueChange = { productName = it; showError = false }, label = { Text("¿Qué vas a vender?", color = TextSecondary) },
             singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UAMGreen, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VividGreen, unfocusedBorderColor = Color.LightGray, focusedTextColor = TextPrimary),
             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
             isError = showError && productName.isBlank()
         )
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
-            value = productPrice, onValueChange = { productPrice = it; showError = false }, label = { Text("Precio (C$)", color = Color.Gray) },
+            value = productPrice, onValueChange = { productPrice = it; showError = false }, label = { Text("Precio (C$)", color = TextSecondary) },
             singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = UAMGreen, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VividGreen, unfocusedBorderColor = Color.LightGray, focusedTextColor = TextPrimary),
             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
             isError = showError && productPrice.isBlank()
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Categoría / Facultad", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
+        Text("Categoría / Facultad", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val faculties = listOf("Ingeniería", "Medicina", "Odontología", "Arte", "Derecho")
             items(faculties) { faculty ->
-                FilterChip(selected = selectedFaculty == faculty, onClick = { selectedFaculty = faculty }, label = { Text(faculty, color = if (selectedFaculty == faculty) Color.Black else Color.LightGray) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E), selectedContainerColor = UAMGreen), shape = CircleShape)
+                FilterChip(selected = selectedFaculty == faculty, onClick = { selectedFaculty = faculty }, label = { Text(faculty, color = if (selectedFaculty == faculty) Color.White else TextPrimary) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color.White, selectedContainerColor = VividGreen), shape = CircleShape)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Estado del producto", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
+        Text("Estado del producto", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val conditions = listOf("Nuevo", "Como nuevo", "Buen estado", "Usado")
             items(conditions) { condition ->
-                FilterChip(selected = selectedCondition == condition, onClick = { selectedCondition = condition }, label = { Text(condition, color = if (selectedCondition == condition) Color.Black else Color.LightGray) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E), selectedContainerColor = UAMGreen), shape = CircleShape)
+                FilterChip(selected = selectedCondition == condition, onClick = { selectedCondition = condition }, label = { Text(condition, color = if (selectedCondition == condition) Color.White else TextPrimary) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color.White, selectedContainerColor = VividGreen), shape = CircleShape)
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Método de entrega", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
+        Text("Método de entrega", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val methods = listOf("Entrega a mano", "Punto acordado", "Por envío")
             items(methods) { method ->
-                FilterChip(selected = deliveryMethod == method, onClick = { deliveryMethod = method }, label = { Text(method, color = if (deliveryMethod == method) Color.Black else Color.LightGray) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E), selectedContainerColor = UAMGreen), shape = CircleShape)
+                FilterChip(selected = deliveryMethod == method, onClick = { deliveryMethod = method }, label = { Text(method, color = if (deliveryMethod == method) Color.White else TextPrimary) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color.White, selectedContainerColor = VividGreen), shape = CircleShape)
             }
         }
         Spacer(modifier = Modifier.height(40.dp))
@@ -629,9 +621,9 @@ fun PublishProductForm(
                     showError = true
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = UAMGreen), shape = CircleShape
+            modifier = Modifier.fillMaxWidth().height(55.dp), colors = ButtonDefaults.buttonColors(containerColor = VividGreen), shape = CircleShape
         ) {
-            Text(if(productoAEditar == null) "Publicar Artículo" else "Guardar Cambios", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(if(productoAEditar == null) "Publicar Artículo" else "Guardar Cambios", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -655,53 +647,53 @@ fun SellerDashboardContent(
     Scaffold(
         containerColor = Color.Transparent,
         floatingActionButton = {
-            FloatingActionButton(onClick = onOpenPublish, containerColor = UAMGreen, shape = CircleShape, modifier = Modifier.padding(bottom = 16.dp)) {
-                Icon(Icons.Default.Add, contentDescription = "Publicar Nuevo", tint = Color.Black)
+            FloatingActionButton(onClick = onOpenPublish, containerColor = VividGreen, shape = CircleShape, modifier = Modifier.padding(bottom = 16.dp)) {
+                Icon(Icons.Default.Add, contentDescription = "Publicar Nuevo", tint = Color.White)
             }
         }
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(20.dp))
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBackToBuyer) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White) }
+                IconButton(onClick = onBackToBuyer) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = TextPrimary) }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Ventas en Campus", color = UAMGreen, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Ventas en Campus", color = VividGreen, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onLogoutClick) {
                     Icon(Icons.Default.ExitToApp, contentDescription = "Salir", tint = Color.Red.copy(alpha = 0.8f))
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
-            Text("Tus Publicaciones Activas", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("Tus Publicaciones Activas", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
 
             if (misProductos.isEmpty()) {
                 Column(modifier = Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Box(modifier = Modifier.size(80.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(20.dp)).clickable { onOpenPublish() }, contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = UAMGreen, modifier = Modifier.size(48.dp))
+                    Box(modifier = Modifier.size(80.dp).background(Color.White, RoundedCornerShape(20.dp)).clickable { onOpenPublish() }, contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = VividGreen, modifier = Modifier.size(48.dp))
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No tienes artículos a la venta aún", color = Color.Gray, fontSize = 14.sp)
+                    Text("No tienes artículos a la venta aún", color = TextSecondary, fontSize = 14.sp)
                 }
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(misProductos) { prod ->
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(60.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.size(60.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray)
                                 }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(prod.nombre, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
-                                    Text("C$ ${prod.precio}", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(prod.nombre, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
+                                    Text("C$ ${prod.precio}", color = VividGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 }
                                 IconButton(onClick = { onEditProduct(prod) }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.LightGray)
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.Gray)
                                 }
                                 IconButton(onClick = { onDeleteProduct(prod) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color.Red.copy(alpha = 0.8f))
@@ -746,12 +738,12 @@ fun BuyerMarketContent(
 
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Mercado Campus Link", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("Mercado Campus Link", color = VividGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (hasNotification) {
-                        Icon(Icons.Default.NotificationsActive, contentDescription = "Alerta", tint = UAMGreen, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.NotificationsActive, contentDescription = "Alerta", tint = VividGreen, modifier = Modifier.size(20.dp))
                     }
-                    IconButton(onClick = onToggleMode) { Icon(Icons.Default.SwapHoriz, contentDescription = "Cambiar Modo", tint = UAMGreen) }
+                    IconButton(onClick = onToggleMode) { Icon(Icons.Default.SwapHoriz, contentDescription = "Cambiar Modo", tint = VividGreen) }
                     IconButton(onClick = onLogoutClick) { Icon(Icons.Default.ExitToApp, contentDescription = "Salir", tint = Color.Red.copy(alpha = 0.8f)) }
                 }
             }
@@ -760,25 +752,25 @@ fun BuyerMarketContent(
         item { UAMTextField(label = "Buscar tu próximo artículo UAM...", value = searchQuery, onValueChange = { searchQuery = it }) }
         item { Spacer(modifier = Modifier.height(24.dp)) }
 
-        item { Text("Filtrar por:", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+        item { Text("Filtrar por:", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val conditions = listOf("Precio Máx", "Nuevo", "Como nuevo", "Buen estado", "Usado")
                 items(conditions) { condition ->
-                    FilterChip(selected = selectedCondition == condition, onClick = { selectedCondition = if (selectedCondition == condition) null else condition }, label = { Text(condition, color = if (selectedCondition == condition) Color.Black else Color.White) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E), selectedContainerColor = UAMGreen), shape = CircleShape)
+                    FilterChip(selected = selectedCondition == condition, onClick = { selectedCondition = if (selectedCondition == condition) null else condition }, label = { Text(condition, color = if (selectedCondition == condition) Color.White else TextPrimary) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color.White, selectedContainerColor = VividGreen), shape = CircleShape)
                 }
             }
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
-        item { Text("Categorías de Facultad", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+        item { Text("Categorías de Facultad", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val faculties = listOf("Todos", "Medicina", "Odontología", "Ingeniería", "Arte", "Derecho")
                 items(faculties) { faculty ->
-                    FilterChip(selected = selectedFaculty == faculty, onClick = { selectedFaculty = faculty }, label = { Text(faculty, color = if (selectedFaculty == faculty) Color.Black else Color.LightGray) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E), selectedContainerColor = UAMGreen), shape = CircleShape)
+                    FilterChip(selected = selectedFaculty == faculty, onClick = { selectedFaculty = faculty }, label = { Text(faculty, color = if (selectedFaculty == faculty) Color.White else TextPrimary) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color.White, selectedContainerColor = VividGreen), shape = CircleShape)
                 }
             }
         }
@@ -791,12 +783,12 @@ fun BuyerMarketContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Productos Destacados", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Productos Destacados", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(
                     text = "Ver todos",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = UAMGreen,
+                    color = VividGreen,
                     modifier = Modifier.clickable { /* Acción opcional */ }
                 )
             }
@@ -818,14 +810,14 @@ fun BuyerMarketContent(
         }
 
         item { Spacer(modifier = Modifier.height(32.dp)) }
-        item { Text("Todos los artículos", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+        item { Text("Todos los artículos", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
         item { Spacer(modifier = Modifier.height(12.dp)) }
         if (productosFiltrados.isEmpty()) {
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.SearchOff, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(64.dp))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("No hay artículos que coincidan con los filtros", color = Color.Gray)
+                    Text("No hay artículos que coincidan con los filtros", color = TextSecondary)
                 }
             }
         } else {
@@ -837,23 +829,13 @@ fun BuyerMarketContent(
 
 // 🔴 3. COMPONENTE VISUAL CON EL "COSITO DE PEDIR" Y LOGICA COMPLETA
 
-
-
-
-
-
-
 @Composable
 fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    // 1. Extraemos la lógica: "nombreImagen|DescripcionReal"
-    // Usamos ?. y ?: para evitar el error de "nullable receiver"
     val datos = producto.descripcion?.split("|") ?: listOf("placeholder", "Sin descripción")
     val nombreImagen = datos.firstOrNull() ?: "placeholder"
-    val descripcionReal = if (datos.size > 1) datos[1] else ""
 
-    // 2. Buscamos el ID del recurso en drawable
     val imageResId = remember(nombreImagen) {
         context.resources.getIdentifier(nombreImagen, "drawable", context.packageName)
     }
@@ -867,7 +849,6 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
         shape = RoundedCornerShape(16.dp)
     ) {
         Column {
-            // Box de la Imagen
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -882,7 +863,6 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
                 } else {
-                    // Si no encuentra la imagen, muestra el icono por defecto
                     Icon(
                         imageVector = Icons.Default.MenuBook,
                         contentDescription = null,
@@ -891,7 +871,6 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
                     )
                 }
 
-                // Etiqueta de categoría
                 Box(
                     modifier = Modifier
                         .padding(8.dp)
@@ -907,13 +886,12 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
                 }
             }
 
-            // Info del producto
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = producto.nombre,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -925,7 +903,7 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
                     Text(
                         text = producto.estado,
                         fontSize = 11.sp,
-                        color = Color.Gray,
+                        color = TextSecondary,
                         maxLines = 1
                     )
                 }
@@ -941,20 +919,20 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
                         text = "C$ ${producto.precio}",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = UAMGreen // Asegúrate de tener definido este color
+                        color = VividGreen
                     )
 
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .background(UAMGreen, CircleShape)
+                            .background(VividGreen, CircleShape)
                             .clickable { onClick() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.ShoppingBag,
                             contentDescription = "Pedir",
-                            tint = Color.Black,
+                            tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -964,48 +942,44 @@ fun ProductoDestacadoCard(producto: Producto, onClick: () -> Unit) {
     }
 }
 
-
-
-
-
 @Composable
 fun MessagesHistoryContent(chats: List<ChatRoom>, onChatClick: (ChatRoom) -> Unit, onBotClick: () -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         item { Spacer(modifier = Modifier.height(20.dp)) }
-        item { Text("Tus Mensajes", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+        item { Text("Tus Mensajes", color = VividGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold) }
         item { Spacer(modifier = Modifier.height(24.dp)) }
         item {
-            Card(modifier = Modifier.fillMaxWidth().clickable { onBotClick() }, colors = CardDefaults.cardColors(containerColor = Color(0xFF121212)), border = BorderStroke(1.dp, UAMGreen.copy(alpha = 0.5f)), shape = RoundedCornerShape(16.dp)) {
+            Card(modifier = Modifier.fillMaxWidth().clickable { onBotClick() }, colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, VividGreen.copy(alpha = 0.5f)), shape = RoundedCornerShape(16.dp)) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(50.dp).background(UAMGreen.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) { Text("🤖", fontSize = 24.sp) }
+                    Box(modifier = Modifier.size(50.dp).background(VividGreen.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) { Text("🤖", fontSize = 24.sp) }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("UAMBot", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Asistente de Campus Link", color = UAMGreen, fontSize = 12.sp)
+                        Text("UAMBot", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Asistente de Campus Link", color = VividGreen, fontSize = 12.sp)
                     }
                 }
             }
         }
         item { Spacer(modifier = Modifier.height(24.dp)) }
-        item { Text("Conversaciones Recientes", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+        item { Text("Conversaciones Recientes", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
         item { Spacer(modifier = Modifier.height(12.dp)) }
         if (chats.isEmpty()) {
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(48.dp))
+                    Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Aún no tienes mensajes directos", color = Color.Gray, fontSize = 14.sp)
+                    Text("Aún no tienes mensajes directos", color = TextSecondary, fontSize = 14.sp)
                 }
             }
         } else {
             items(chats) { chat ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onChatClick(chat) }, colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), shape = RoundedCornerShape(16.dp)) {
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onChatClick(chat) }, colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(48.dp).background(Color(0xFF2C2C2C), CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray) }
+                        Box(modifier = Modifier.size(48.dp).background(Color(0xFFF5F5F5), CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray) }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(text = chat.nombre_interlocutor ?: "Usuario", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(text = "Sobre: ${chat.nombre_producto}", color = Color.Gray, fontSize = 12.sp, maxLines = 1)
+                            Text(text = chat.nombre_interlocutor ?: "Usuario", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(text = "Sobre: ${chat.nombre_producto}", color = TextSecondary, fontSize = 12.sp, maxLines = 1)
                         }
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
                     }
@@ -1025,16 +999,16 @@ fun UAMBotScreen(onBackClick: () -> Unit) {
     val commonQuestions = listOf("¿Cómo publico un artículo?", "¿Es seguro comprar aquí?", "¿Dónde se entrega el producto?")
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("UAMBot Asistente", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = UAMGreen) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF121212))) },
-        containerColor = UAMBackground
+        topBar = { TopAppBar(title = { Text("UAMBot Asistente", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = VividGreen) } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)) },
+        containerColor = LightGreenBg
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp), reverseLayout = false) {
                 item { Spacer(modifier = Modifier.height(16.dp)) }
                 items(messages) { msg ->
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start) {
-                        Box(modifier = Modifier.background(color = if (msg.isUser) UAMGreen else Color(0xFF1E1E1E), shape = RoundedCornerShape(16.dp)).padding(12.dp).widthIn(max = 280.dp)) {
-                            Text(text = msg.text, color = if (msg.isUser) Color.Black else Color.White, fontSize = 14.sp)
+                        Box(modifier = Modifier.background(color = if (msg.isUser) VividGreen else Color.White, shape = RoundedCornerShape(16.dp)).padding(12.dp).widthIn(max = 280.dp)) {
+                            Text(text = msg.text, color = if (msg.isUser) Color.White else TextPrimary, fontSize = 14.sp)
                         }
                     }
                 }
@@ -1052,7 +1026,7 @@ fun UAMBotScreen(onBackClick: () -> Unit) {
                             }
                             messages.add(BotMsg(respuesta, false))
                         },
-                        label = { Text(question, color = Color.White) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color(0xFF1E1E1E)), shape = CircleShape
+                        label = { Text(question, color = TextPrimary) }, colors = FilterChipDefaults.filterChipColors(containerColor = Color.White), shape = CircleShape
                     )
                 }
             }
@@ -1063,13 +1037,13 @@ fun UAMBotScreen(onBackClick: () -> Unit) {
 @Composable
 fun ProductDetailsSheet(producto: Producto, onClose: () -> Unit, onBuyProduct: () -> Unit, onContactSeller: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
-        Box(modifier = Modifier.fillMaxWidth().height(200.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxWidth().height(200.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(64.dp))
         }
         Spacer(modifier = Modifier.height(20.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-            Text(text = producto.nombre, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Text(text = "C$ ${producto.precio}", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(text = producto.nombre, color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(text = "C$ ${producto.precio}", color = VividGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1079,20 +1053,20 @@ fun ProductDetailsSheet(producto: Producto, onClose: () -> Unit, onBuyProduct: (
         Spacer(modifier = Modifier.height(8.dp))
         InfoChip(icon = Icons.Default.LocationOn, text = producto.metodo_entrega)
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Reseña del vendedor", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text("Reseña del vendedor", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = producto.descripcion ?: "Este artículo no tiene una descripción detallada.", color = Color.LightGray, fontSize = 14.sp, lineHeight = 20.sp)
+        Text(text = producto.descripcion ?: "Este artículo no tiene una descripción detallada.", color = TextSecondary, fontSize = 14.sp, lineHeight = 20.sp)
         Spacer(modifier = Modifier.height(32.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onBuyProduct, modifier = Modifier.weight(1.2f).height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = UAMGreen), shape = CircleShape) {
-                Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
+            Button(onClick = onBuyProduct, modifier = Modifier.weight(1.2f).height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = VividGreen), shape = CircleShape) {
+                Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Pedir", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("Pedir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
-            Button(onClick = onContactSeller, modifier = Modifier.weight(1f).height(50.dp).border(1.5.dp, UAMGreen, CircleShape), colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent), shape = CircleShape) {
-                Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = UAMGreen, modifier = Modifier.size(18.dp))
+            Button(onClick = onContactSeller, modifier = Modifier.weight(1f).height(50.dp).border(1.5.dp, VividGreen, CircleShape), colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent), shape = CircleShape) {
+                Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = VividGreen, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Chat", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("Chat", color = VividGreen, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
         }
     }
@@ -1100,24 +1074,24 @@ fun ProductDetailsSheet(producto: Producto, onClose: () -> Unit, onBuyProduct: (
 
 @Composable
 fun InfoChip(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
-    Row(modifier = Modifier.background(Color(0xFF2C2C2C), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (icon != null) { Icon(icon, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(14.dp)); Spacer(modifier = Modifier.width(4.dp)) }
-        Text(text, color = Color.LightGray, fontSize = 12.sp)
+    Row(modifier = Modifier.background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) { Icon(icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp)); Spacer(modifier = Modifier.width(4.dp)) }
+        Text(text, color = TextSecondary, fontSize = 12.sp)
     }
 }
 
 @Composable
 fun ProductListItem(producto: Producto, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), shape = RoundedCornerShape(16.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(80.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray) }
+            Box(modifier = Modifier.size(80.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray) }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(producto.nombre, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
+                Text(producto.nombre, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(producto.categoria, color = Color.Gray, fontSize = 12.sp)
+                Text(producto.categoria, color = TextSecondary, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("C$ ${producto.precio}", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("C$ ${producto.precio}", color = VividGreen, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }
@@ -1142,7 +1116,7 @@ fun ProfileContent(
         item { Spacer(modifier = Modifier.height(20.dp)) }
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Mi Perfil UAM", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("Mi Perfil UAM", color = VividGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onLogoutClick) {
                     Icon(Icons.Default.ExitToApp, contentDescription = "Salir", tint = Color.Red.copy(alpha = 0.8f))
                 }
@@ -1150,24 +1124,24 @@ fun ProfileContent(
         }
         item { Spacer(modifier = Modifier.height(24.dp)) }
         item {
-            Box(modifier = Modifier.size(90.dp).background(Color(0xFF1E1E1E), CircleShape).border(2.dp, UAMGreen, CircleShape), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(50.dp))
+            Box(modifier = Modifier.size(90.dp).background(Color.White, CircleShape).border(2.dp, VividGreen, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(50.dp))
             }
         }
         item { Spacer(modifier = Modifier.height(16.dp)) }
-        item { Text("Estudiante UAM", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-        item { Text("Comunidad Campus Link v1.6", color = Color.Gray, fontSize = 12.sp) }
+        item { Text("Estudiante UAM", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+        item { Text("Comunidad Campus Link v1.6", color = TextSecondary, fontSize = 12.sp) }
         item { Spacer(modifier = Modifier.height(24.dp)) }
         item {
-            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)), shape = RoundedCornerShape(20.dp)) {
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp)) {
                 Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(50.dp).background(UAMGreen.copy(alpha = 0.15f), CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.History, contentDescription = null, tint = UAMGreen)
+                    Box(modifier = Modifier.size(50.dp).background(VividGreen.copy(alpha = 0.15f), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.History, contentDescription = null, tint = VividGreen)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("Total Invertido en Campus", color = Color.Gray, fontSize = 13.sp)
-                        Text("C$ $totalGastado", color = UAMGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Text("Total Invertido en Campus", color = TextSecondary, fontSize = 13.sp)
+                        Text("C$ $totalGastado", color = VividGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1176,28 +1150,28 @@ fun ProfileContent(
         // PESTAÑAS DE NAVEGACIÓN INTERNA PARA EL HISTORIAL
         item { Spacer(modifier = Modifier.height(24.dp)) }
         item {
-            Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF121212), RoundedCornerShape(12.dp)).padding(4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(12.dp)).padding(4.dp)) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (activeSubTab == 0) UAMGreen else Color.Transparent)
+                        .background(if (activeSubTab == 0) VividGreen else Color.Transparent)
                         .clickable { activeSubTab = 0 }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Mis Compras", color = if (activeSubTab == 0) Color.Black else Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Mis Compras", color = if (activeSubTab == 0) Color.White else TextSecondary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (activeSubTab == 1) UAMGreen else Color.Transparent)
+                        .background(if (activeSubTab == 1) VividGreen else Color.Transparent)
                         .clickable { activeSubTab = 1 }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Mis Ventas (Pedidos)", color = if (activeSubTab == 1) Color.Black else Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Mis Ventas (Pedidos)", color = if (activeSubTab == 1) Color.White else TextSecondary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -1209,9 +1183,9 @@ fun ProfileContent(
             if (compras.isEmpty()) {
                 item {
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("¡Aún no has solicitado productos!", color = Color.Gray, fontSize = 14.sp)
+                        Text("¡Aún no has solicitado productos!", color = TextSecondary, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -1219,26 +1193,26 @@ fun ProfileContent(
                     val estado = estadoPedidos[articulo.id] ?: "En curso"
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { onProductClick(articulo) },
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(50.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.size(50.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                                 Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(24.dp))
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(articulo.nombre, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                                Text(articulo.nombre, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Box(
                                     modifier = Modifier
-                                        .background(if (estado == "En curso") Color(0xFFFFB300) else UAMGreen, RoundedCornerShape(6.dp))
+                                        .background(if (estado == "En curso") Color(0xFFFFB300) else VividGreen, RoundedCornerShape(6.dp))
                                         .padding(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
-                                    Text(estado, color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text(estado, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
-                            Text("C$ ${articulo.precio}", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("C$ ${articulo.precio}", color = VividGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -1250,9 +1224,9 @@ fun ProfileContent(
             if (ventas.isEmpty()) {
                 item {
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("Nadie ha comprado tus productos todavía", color = Color.Gray, fontSize = 14.sp)
+                        Text("Nadie ha comprado tus productos todavía", color = TextSecondary, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -1260,27 +1234,27 @@ fun ProfileContent(
                     val estado = estadoPedidos[articulo.id] ?: "En curso"
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(50.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.size(50.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(24.dp))
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(articulo.nombre, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                                    Text(articulo.nombre, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Box(
                                         modifier = Modifier
-                                            .background(if (estado == "En curso") Color(0xFFFFB300) else UAMGreen, RoundedCornerShape(6.dp))
+                                            .background(if (estado == "En curso") Color(0xFFFFB300) else VividGreen, RoundedCornerShape(6.dp))
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
                                     ) {
-                                        Text(estado, color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        Text(estado, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
-                                Text("C$ ${articulo.precio}", color = UAMGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("C$ ${articulo.precio}", color = VividGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
 
                             if (estado == "En curso") {
@@ -1288,13 +1262,13 @@ fun ProfileContent(
                                 Button(
                                     onClick = { onMarcarEntregado(articulo) },
                                     modifier = Modifier.fillMaxWidth().height(36.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = UAMGreen),
+                                    colors = ButtonDefaults.buttonColors(containerColor = VividGreen),
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Marcar como Entregado", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Text("Marcar como Entregado", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
